@@ -12,6 +12,7 @@ class Connection:
     """The class managing the LDAP connection."""
 
     _connection_error_msg = "Unable to connect to %s"
+    _bad_auth_error_msg = "Unable to authenticate user = %s"
 
     def __init__ (self, uri):
         self.uri = uri
@@ -26,3 +27,5 @@ class Connection:
             self.con.simple_bind_s (who, cred)
         except ldap.SERVER_DOWN:
             self._raise_error (Connection._connection_error_msg % self.uri)
+        except ldap.INVALID_CREDENTIALS:
+            self._raise_error (Connection._bad_auth_error_msg % who)

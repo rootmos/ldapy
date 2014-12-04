@@ -28,6 +28,18 @@ class ConnectionErrors (unittest.TestCase):
         msg = Connection._connection_error_msg % bad_uri
         expected = ConnectionError (con, msg) 
         self.assertEqual (str(received.exception), str(expected))
+    
+    def test_bind_auth_error (self):
+        uri = "ldap://localhost"
+        bad_user ="cn=badguy,dc=nodomain"
+        bad_password ="urg"
+        con = Connection (uri)
+        with self.assertRaises(ConnectionError) as received:
+            con.bind (bad_user, bad_password)
+        
+        msg = Connection._bad_auth_error_msg % bad_user
+        expected = ConnectionError (con, msg) 
+        self.assertEqual (str(received.exception), str(expected))
 
 
 if __name__ == '__main__':
