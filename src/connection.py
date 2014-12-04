@@ -29,3 +29,6 @@ class Connection:
             self._raise_error (Connection._connection_error_msg % self.uri)
         except ldap.INVALID_CREDENTIALS:
             self._raise_error (Connection._bad_auth_error_msg % who)
+
+        self.connected = True
+
