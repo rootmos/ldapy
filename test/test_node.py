@@ -2,8 +2,15 @@ from node import Node, NodeError, DNError
 import unittest
 import configuration
 
-class NodeErrors (unittest.TestCase):
+class BasicNodeTests (unittest.TestCase):
+    def setUp (self):
+        self.con = configuration.getConnection ()
 
+    def test_successful_creation (self):
+        dn = "ou=People, dc=nodomain"
+        node = Node (self.con, dn)
+
+class NodeErrors (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -20,4 +27,5 @@ class NodeErrors (unittest.TestCase):
         msg = Node._dn_does_not_exist % bad_dn
         self.assertTrue (msg in str(received.exception))
 
-
+if __name__ == '__main__':
+    unittest.main()
