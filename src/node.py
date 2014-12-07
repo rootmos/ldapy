@@ -20,12 +20,19 @@ class Node:
     """Class representing a node in the database"""
 
     _dn_does_not_exist = "DN does not exits: %s"
+    _wrong_number_of_results = "Search returned %d nodes!"
 
     def __init__ (self, con, dn):
         self.con = con
-        self.dn = dn
+        self.dn = None
+        self.attributes = None
         try:
-            con.ldap.search_s (dn, ldap.SCOPE_BASE)
+            nodes = con.ldap.search_s (dn, ldap.SCOPE_BASE)
+            if len(nodes) != 1:
+                raise NodeError (self, Node._wrong_number_of_results % len(nodes))
+            node = nodes[0]
+            self.dn = node[0]
+            self.attributes = node[1]
         except ldap.INVALID_DN_SYNTAX:
             raise DNError (dn)
         except ldap.NO_SUCH_OBJECT:

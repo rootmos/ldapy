@@ -8,7 +8,11 @@ class BasicNodeTests (unittest.TestCase):
 
     def test_successful_creation (self):
         dn = "ou=People, dc=nodomain"
+        dn_shortened = "ou=People,dc=nodomain"
         node = Node (self.con, dn)
+
+        self.assertEqual (node.dn, dn_shortened)
+        self.assertIsNotNone (node.attributes)
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):
