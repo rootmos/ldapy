@@ -28,3 +28,5 @@ class Node:
             con.ldap.search_s (dn, ldap.SCOPE_BASE)
         except ldap.INVALID_DN_SYNTAX:
             raise DNError (dn)
+        except ldap.NO_SUCH_OBJECT:
+            raise NodeError (self, Node._dn_does_not_exist % dn)
