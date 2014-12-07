@@ -2,23 +2,20 @@ from connection import Connection, ConnectionError
 import unittest
 import ldap
 import ldap.ldapobject
+import configuration
 
 class BasicConnection(unittest.TestCase):
 
     def setUp (self):
-        self.uri = "ldap://localhost"
-        self.con = Connection (self.uri)
-
-        self.user = "cn=admin,dc=nodomain"
-        self.password = "foobar"
+        self.con = Connection (configuration.uri)
 
     def test_initialization (self):
-        self.assertEqual (self.con.uri, self.uri)
+        self.assertEqual (self.con.uri, configuration.uri)
         self.assertIsInstance (self.con.con, ldap.ldapobject.LDAPObject)
         self.assertFalse (self.con.connected)
 
     def test_bind (self):
-        self.con.bind (self.user, self.password)
+        self.con.bind (configuration.admin, configuration.admin_password)
         self.assertTrue (self.con.connected)
 
 class ConnectionErrors (unittest.TestCase):
@@ -34,10 +31,9 @@ class ConnectionErrors (unittest.TestCase):
         self.assertEqual (str(received.exception), str(expected))
 
     def test_bind_auth_error (self):
-        uri = "ldap://localhost"
         bad_user ="cn=badguy,dc=nodomain"
         bad_password ="urg"
-        con = Connection (uri)
+        con = Connection (configuration.uri)
         with self.assertRaises(ConnectionError) as received:
             con.bind (bad_user, bad_password)
 
