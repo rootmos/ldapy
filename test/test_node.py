@@ -14,6 +14,12 @@ class BasicNodeTests (unittest.TestCase):
         self.assertEqual (node.dn, dn_shortened)
         self.assertIsNotNone (node.attributes)
 
+    def test_attributes (self):
+        dn = "ou=People,dc=nodomain"
+        node = Node (self.con, dn)
+
+        self.assertEqual (node.attributes["objectClass"][0], "organizationalUnit")
+
     def test_children (self):
         dn ="ou=People,dc=nodomain"
         parent = Node (self.con, dn)
@@ -23,6 +29,8 @@ class BasicNodeTests (unittest.TestCase):
 
         child = children[0]
         self.assertEqual (child.dn, "uid=john,ou=People,dc=nodomain")
+
+        self.assertIn("posixAccount", child.attributes["objectClass"])
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):
