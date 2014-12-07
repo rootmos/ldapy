@@ -38,3 +38,16 @@ class Parser (unittest.TestCase):
         assert not cmd1.__call__.called
         assert cmd2.__call__.called
 
+    def test_arguments (self):
+        cmd = Command ("cmd")
+        cmd.__call__ = mock.MagicMock()
+
+        cli = Commandline ([cmd])
+
+        cmdline = "cmd a \"b c\""
+        args = ["a", "b c"]
+
+        cli.parse_and_dispatch (cmdline)
+
+        cmd.__call__.assert_called_with (args)
+
