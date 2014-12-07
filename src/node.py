@@ -25,6 +25,7 @@ class Node:
     def __init__ (self, con, dn, attributes = None):
         self.con = con
         self.dn = dn
+        self.parent = None
         self._children = None
         if attributes is not None:
             self.attributes = attributes
@@ -52,6 +53,7 @@ class Node:
             children = self.con.ldap.search_s (self.dn, ldap.SCOPE_ONELEVEL)
             for child in children:
                 node = Node (self.con, child[0], child[1])
+                node.parent = self
                 self._children.append (node)
 
         return self._children

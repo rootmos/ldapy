@@ -29,7 +29,7 @@ class BasicNodeTests (unittest.TestCase):
 
         child = children[0]
         self.assertEqual (child.dn, "uid=john,ou=People,dc=nodomain")
-
+        self.assertEqual (child.parent, parent)
         self.assertIn("posixAccount", child.attributes["objectClass"])
 
 class NodeErrors (unittest.TestCase):
