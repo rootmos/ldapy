@@ -10,10 +10,7 @@ class Parser (unittest.TestCase):
         assert not cli.parse_and_dispatch ("")
 
     def test_no_such_command (self):
-        cmd = Command ("cmd")
-        cmd.__call__ = mock.MagicMock()
-
-        cli = Commandline ([cmd])
+        cli = Commandline ([])
 
         with self.assertRaises (NoSuchCommand):
             cli.parse_and_dispatch ("no_such_command")
@@ -71,4 +68,21 @@ class BasicFunctionality (unittest.TestCase):
 
         with mock.patch('__builtin__.raw_input', side_effect=EOFError):
             cli.loop ()
+
+    def test_no_such_command (self):
+        cli = Commandline ([])
+
+        no_such_command = "no_such_command"
+
+        inputs = [no_such_command, "quit"]
+
+        with mock.patch('__builtin__.raw_input', side_effect=inputs),\
+                mock.patch('sys.stdout.write') as print_mock:
+                    cli.loop ()
+
+        expect_calls = \
+                [mock.call(Commandline._no_such_command % no_such_command),\
+                 mock.call("\n")]
+        assert print_mock.call_args_list == expect_calls
+
 

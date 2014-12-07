@@ -13,7 +13,13 @@ class Command:
         pass
 
 class NoSuchCommand (Exception):
-    pass
+    def __init__ (self, cmd):
+        self.cmd = cmd
+
+
+    def __str__ (self):
+        return Commandline._no_such_command % self.cmd
+
 
 class ExitCommandline (Exception):
     pass
@@ -36,18 +42,24 @@ class Commandline:
         words = shlex.split (line)
         if not words:
             return False
+
+        cmd_name = words.pop (0)
         try:
-            cmd_name = words.pop (0)
             cmd = self.commands[cmd_name]
             return cmd (words)
         except KeyError:
-            raise NoSuchCommand ()
+            raise NoSuchCommand (cmd_name)
+
+    _no_such_command = "No such command: %s"
 
     def loop (self):
         try:
             while True:
                 line = raw_input ()
-                self.parse_and_dispatch (line)
+                try:
+                    self.parse_and_dispatch (line)
+                except NoSuchCommand as e:
+                    print e
         except EOFError:
             return
         except ExitCommandline:
