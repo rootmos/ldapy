@@ -1,6 +1,6 @@
 import ldap
 
-class ConnectionError(Exception):
+class ConnectionError (Exception):
     def __init__ (self, con, msg):
         self.con = con
         self.msg = msg
@@ -16,7 +16,7 @@ class Connection:
 
     def __init__ (self, uri):
         self.uri = uri
-        self.con = ldap.initialize (uri)
+        self.ldap = ldap.initialize (uri)
         self.connected = False
 
     def _raise_error (self, msg):
@@ -24,7 +24,7 @@ class Connection:
 
     def bind (self, who, cred):
         try:
-            self.con.simple_bind_s (who, cred)
+            self.ldap.simple_bind_s (who, cred)
         except ldap.SERVER_DOWN:
             self._raise_error (Connection._connection_error_msg % self.uri)
         except ldap.INVALID_CREDENTIALS:

@@ -11,7 +11,7 @@ class BasicConnection(unittest.TestCase):
 
     def test_initialization (self):
         self.assertEqual (self.con.uri, configuration.uri)
-        self.assertIsInstance (self.con.con, ldap.ldapobject.LDAPObject)
+        self.assertIsInstance (self.con.ldap, ldap.ldapobject.LDAPObject)
         self.assertFalse (self.con.connected)
 
     def test_bind (self):
