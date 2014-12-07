@@ -23,7 +23,9 @@ class Commandline:
         if not words:
             return False
         try:
-            cmd = self.commands[words[0]]
+            cmd_name = words.pop (0)
+            cmd = self.commands[cmd_name]
+            cmd (words)
         except KeyError:
             raise NoSuchCommand ()
 
