@@ -51,3 +51,24 @@ class Parser (unittest.TestCase):
 
         cmd.__call__.assert_called_with (args)
 
+
+class BasicFunctionality (unittest.TestCase):
+
+    def test_exit (self):
+        cli = Commandline ([])
+
+        with mock.patch('__builtin__.raw_input', return_value='exit'):
+            cli.loop ()
+
+    def test_quit (self):
+        cli = Commandline ([])
+
+        with mock.patch('__builtin__.raw_input', return_value='quit'):
+            cli.loop ()
+
+    def test_eof (self):
+        cli = Commandline ([])
+
+        with mock.patch('__builtin__.raw_input', side_effect=EOFError):
+            cli.loop ()
+
