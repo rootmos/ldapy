@@ -22,18 +22,37 @@ class Node:
     _dn_does_not_exist = "DN does not exits: %s"
     _wrong_number_of_results = "Search returned %d nodes!"
 
-    def __init__ (self, con, dn):
+    def __init__ (self, con, dn, attributes = None):
         self.con = con
-        self.dn = None
-        self.attributes = None
+        self.dn = dn
+        self._children = None
+        if attributes is not None:
+            self.attributes = attributes
+        else:
+            self._populateAttributes ()
+
+    def _populateAttributes (self):
         try:
-            nodes = con.ldap.search_s (dn, ldap.SCOPE_BASE)
+            nodes = self.con.ldap.search_s (self.dn, ldap.SCOPE_BASE)
             if len(nodes) != 1:
                 raise NodeError (self, Node._wrong_number_of_results % len(nodes))
+
             node = nodes[0]
             self.dn = node[0]
             self.attributes = node[1]
         except ldap.INVALID_DN_SYNTAX:
-            raise DNError (dn)
+            raise DNError (self.dn)
         except ldap.NO_SUCH_OBJECT:
-            raise NodeError (self, Node._dn_does_not_exist % dn)
+            raise NodeError (self, Node._dn_does_not_exist % self.dn)
+
+    @property
+    def children (self):
+        if self._children is None:
+            self._children = []
+            children = self.con.ldap.search_s (self.dn, ldap.SCOPE_ONELEVEL)
+            for child in children:
+                node = Node (self.con, child[0], child[1])
+                self._children.append (node)
+
+        return self._children
+
