@@ -1,5 +1,10 @@
+#!/usr/bin/python
+
 import unittest
 import mock
+import pexpect
+import os
+import sys
 from commandline import Commandline, Command, NoSuchCommand
 
 class Parser (unittest.TestCase):
@@ -85,4 +90,28 @@ class BasicFunctionality (unittest.TestCase):
                  mock.call("\n")]
         assert print_mock.call_args_list == expect_calls
 
+class Completer (unittest.TestCase):
+
+    def test_completer_called (self):
+        pwd = os.path.dirname (__file__)
+        script = os.path.join (pwd, "dispatch.py")
+        args = [script, __name__, Completer.__name__, Completer.sut_completer_called.__name__]
+
+        child = pexpect.spawn (" ".join (args), env = {"PYTHONPATH" : ":".join(sys.path)})
+
+        child.expect ("$")
+        child.send("\t")
+        child.sendline ("quit")
+        child.close ()
+
+        print sys.path
+        assert child.exitstatus == 0
+
+    @staticmethod
+    def sut_completer_called (args):
+        with mock.patch ("commandline.Commandline.complete") as completer:
+            cli = Commandline ([])
+            cli.loop ()
+
+        assert completer.called
 

@@ -33,7 +33,10 @@ class ExitCommand (Command):
 
 
 class Commandline:
-    def __init__ (self, commands, prompt = "$"):
+    def __init__ (self, commands, prompt = "$ "):
+        self.prompt = prompt
+        readline.parse_and_bind('tab: complete')
+        readline.set_completer (self.complete)
         self.commands = { "exit" : ExitCommand(), "quit" : ExitCommand() }
         for cmd in commands:
             self.commands[cmd.command] = cmd
@@ -55,7 +58,7 @@ class Commandline:
     def loop (self):
         try:
             while True:
-                line = raw_input ()
+                line = raw_input (self.prompt)
                 try:
                     self.parse_and_dispatch (line)
                 except NoSuchCommand as e:
@@ -65,6 +68,8 @@ class Commandline:
         except ExitCommandline:
             return
 
+    def complete (self, text, state):
+        pass
 
 
 
