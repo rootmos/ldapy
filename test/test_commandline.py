@@ -90,22 +90,35 @@ class BasicFunctionality (unittest.TestCase):
                  mock.call("\n")]
         assert print_mock.call_args_list == expect_calls
 
+
+def create_sut_process (cls, method):
+    pwd = os.path.dirname (__file__)
+    script = os.path.join (pwd, "dispatch.py")
+    args = [script, __name__, cls.__name__, method.__name__]
+
+    return pexpect.spawn (" ".join (args), env = {"PYTHONPATH" : ":".join(sys.path)})
+
 class Completer (unittest.TestCase):
 
     def test_completer_called (self):
-        pwd = os.path.dirname (__file__)
-        script = os.path.join (pwd, "dispatch.py")
-        args = [script, __name__, Completer.__name__, Completer.sut_completer_called.__name__]
-
-        child = pexpect.spawn (" ".join (args), env = {"PYTHONPATH" : ":".join(sys.path)})
+        child = create_sut_process (Completer, Completer.sut_completer_called)
 
         child.expect ("$")
         child.send("\t")
         child.sendline ("quit")
-        child.close ()
+        child.wait ()
 
-        print sys.path
         assert child.exitstatus == 0
+
+    def test_unique_completion (self):
+        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+
+        child.expect ("$")
+        child.send("qui\t\n")
+        child.wait ()
+
+        assert child.exitstatus == 0
+
 
     @staticmethod
     def sut_completer_called (args):
@@ -114,4 +127,9 @@ class Completer (unittest.TestCase):
             cli.loop ()
 
         assert completer.called
+
+    @staticmethod
+    def sut_trivial_commandline (args):
+        cli = Commandline ([])
+        cli.loop ()
 
