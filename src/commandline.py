@@ -70,11 +70,16 @@ class Commandline:
             return
 
     def complete (self, text, state):
-        if text:
-            self.matches = []
-            for cmd in self.commands.keys():
-                if cmd.startswith (text):
-                    self.matches.append (cmd)
+        if state == 0:
+            if text:
+                self.matches = []
+                for cmd in self.commands.keys():
+                    if cmd.startswith (text):
+                        self.matches.append (cmd)
+            else:
+                self.matches = self.commands.keys()
+
+            self.matches.sort ()
 
         if state < len (self.matches):
             return self.matches[state]
