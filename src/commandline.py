@@ -31,6 +31,7 @@ class ExitCommand (Command):
     def __call__ (self, args):
         raise ExitCommandline
 
+import syslog
 
 class Commandline:
     def __init__ (self, commands, prompt = "$ "):
@@ -69,10 +70,14 @@ class Commandline:
             return
 
     def complete (self, text, state):
-        pass
+        if text:
+            self.matches = []
+            for cmd in self.commands.keys():
+                if cmd.startswith (text):
+                    self.matches.append (cmd)
 
-
-
-
-
+        if state < len (self.matches):
+            return self.matches[state]
+        else:
+            return None
 
