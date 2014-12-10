@@ -133,3 +133,31 @@ class Completer (unittest.TestCase):
         cli = Commandline ([])
         cli.loop ()
 
+
+    def test_list_when_ambiguous (self):
+        child = create_sut_process (Completer, Completer.sut_list_when_ambiguous)
+
+        child.expect ("$")
+        child.send("cmd\t\t")
+        child.expect ("cmd1\s+cmd2")
+        child.send("1\n")
+        child.sendline ("quit")
+        child.wait ()
+
+        assert child.exitstatus == 0
+
+    @staticmethod
+    def sut_list_when_ambiguous (args):
+        cmd1 = Command ("cmd1")
+        cmd1.__call__ = mock.MagicMock()
+        cmd2 = Command ("cmd2")
+        cmd2.__call__ = mock.MagicMock()
+
+        cli = Commandline ([cmd1, cmd2])
+        cli.loop ()
+
+        assert cmd1.__call__.called
+        assert not cmd2.__call__.called
+
+
+
