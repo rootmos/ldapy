@@ -159,5 +159,16 @@ class Completer (unittest.TestCase):
         assert cmd1.__call__.called
         assert not cmd2.__call__.called
 
+    def test_list_all_when_no_text (self):
+        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+
+        child.expect ("$")
+        child.send("\t\t")
+        child.expect ("exit\s+quit")
+        child.sendline ("quit")
+        child.wait ()
+
+        assert child.exitstatus == 0
+
 
 
