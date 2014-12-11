@@ -4,7 +4,7 @@ packages=commandline,node,connection
 
 .PHONY: test
 test:
-	nosetests --with-coverage --cover-package=$(packages) --cover-xml
+	nosetests --with-coverage --cover-package=$(packages)
 
 .PHONY: clean
 clean:
