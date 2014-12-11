@@ -6,6 +6,6 @@ install:
     - pip install python-ldap pexpect python-coveralls nose-cov
     - test/travis/install-ldap.sh
 # command to run tests
-script: nosetests
+script: make
 after_success: coveralls
 
