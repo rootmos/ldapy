@@ -103,7 +103,7 @@ class Completer (unittest.TestCase):
     def test_completer_called (self):
         child = create_sut_process (Completer, Completer.sut_completer_called)
 
-        child.expect ("$")
+        child.expect ("\$")
         child.send("\t")
         child.sendline ("quit")
         child.wait ()
@@ -113,7 +113,7 @@ class Completer (unittest.TestCase):
     def test_unique_completion (self):
         child = create_sut_process (Completer, Completer.sut_trivial_commandline)
 
-        child.expect ("$")
+        child.expect ("\$")
         child.send("qui\t\n")
         child.wait ()
 
@@ -137,7 +137,7 @@ class Completer (unittest.TestCase):
     def test_list_when_ambiguous (self):
         child = create_sut_process (Completer, Completer.sut_list_when_ambiguous)
 
-        child.expect ("$")
+        child.expect ("\$")
         child.send("cmd\t\t")
         child.expect ("cmd1\s+cmd2")
         child.send("1\n")
@@ -162,7 +162,7 @@ class Completer (unittest.TestCase):
     def test_list_all_when_no_text (self):
         child = create_sut_process (Completer, Completer.sut_trivial_commandline)
 
-        child.expect ("$")
+        child.expect ("\$")
         child.send("\t\t")
         child.expect ("exit\s+quit")
         child.sendline ("quit")
