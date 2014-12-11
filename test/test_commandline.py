@@ -94,7 +94,7 @@ class BasicFunctionality (unittest.TestCase):
 def create_sut_process (cls, method):
     pwd = os.path.dirname (__file__)
     script = os.path.join (pwd, "dispatch.py")
-    args = ["coverage", "run", "-p", script, __name__, cls.__name__, method.__name__]
+    args = ["coverage", "run", "-p", "--source", os.environ["NOSE_COVER_PACKAGE"], script, __name__, cls.__name__, method.__name__]
 
     return pexpect.spawn (" ".join (args), env = {"PYTHONPATH" : ":".join(sys.path)})
 

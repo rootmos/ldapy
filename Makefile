@@ -4,7 +4,7 @@ packages=commandline,node,connection
 
 .PHONY: test
 test:
-	nosetests -v --with-coverage --cover-package=$(packages) --cov-report term-missing
+	NOSE_COVER_PACKAGE="$(packages)" nosetests -v --with-coverage --cov-report term-missing
 
 .PHONY: clean
 clean:
