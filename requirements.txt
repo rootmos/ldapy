@@ -1,0 +1,5 @@
+python-ldap
+pexpect
+
+python-coveralls
+nose-cov

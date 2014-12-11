@@ -3,7 +3,7 @@ python:
   - "2.7"
 # command to install dependencies
 install:
-    - pip install python-ldap pexpect python-coveralls nose-cov
+    - pip install -r requirements.txt
     - test/travis/install-ldap.sh
 # command to run tests
 script: make
