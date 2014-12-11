@@ -95,7 +95,8 @@ def create_sut_process (cls, method):
     pwd = os.path.dirname (__file__)
     script = os.path.join (pwd, "dispatch.py")
     args = ["coverage", "run", "-p", "--source", os.environ["NOSE_COVER_PACKAGE"], script, __name__, cls.__name__, method.__name__]
-
+    cmdline = " ".join (args)
+    print "Running:", cmdline
     return pexpect.spawn (" ".join (args), env = {"PYTHONPATH" : ":".join(sys.path)})
 
 class Completer (unittest.TestCase):
@@ -171,11 +172,10 @@ class Completer (unittest.TestCase):
         assert child.exitstatus == 0
 
     def test_commands_own_completer_is_called (self):
-        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+        child = create_sut_process (Completer, Completer.sut_commands_own_completer_is_called)
 
         child.expect ("\$")
-        child.send("cmd \t")
-        child.sendcontrol ("c")
+        child.send("cmd \t\n")
         child.sendline ("quit")
         child.wait ()
         assert child.exitstatus == 0
@@ -185,7 +185,7 @@ class Completer (unittest.TestCase):
         cmd = Command ("cmd")
         cmd.complete = mock.MagicMock ()
 
-        cli = Commandline ([cmd1, cmd2])
+        cli = Commandline ([cmd])
         cli.loop ()
 
         assert cmd.complete.called

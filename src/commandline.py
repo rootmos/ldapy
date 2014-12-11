@@ -16,7 +16,6 @@ class NoSuchCommand (Exception):
     def __init__ (self, cmd):
         self.cmd = cmd
 
-
     def __str__ (self):
         return Commandline._no_such_command % self.cmd
 
@@ -70,13 +69,32 @@ class Commandline:
             return
 
     def complete (self, text, state):
+        # Check if it's the first time we are getting a call for this text,
+        # and if so we populate the list of matches
         if state == 0:
-            if text:
-                self.matches = []
-                for cmd in self.commands.keys():
-                    if cmd.startswith (text):
-                        self.matches.append (cmd)
+            line = readline.get_line_buffer()
+
+            # Check if there's any text or there's stuff in the buffer
+            if text or line:
+                # If the text contains more than a word then we delegate to that
+                # commands completer to populate the matches
+                # (And if the string ends with a space, then surely we have more than a word.)
+                words = shlex.split (line)
+                if len(words) > 1 or (len(words)==1 and line.endswith(" ")):
+                    cmd_name = words.pop (0)
+                    try:
+                        cmd = self.commands[cmd_name]
+                        self.matches = cmd.complete (words)
+                    except KeyError:
+                        return None
+                else:
+                    # We are completing in the first word
+                    self.matches = []
+                    for cmd in self.commands.keys():
+                        if cmd.startswith (text):
+                            self.matches.append (cmd)
             else:
+                # If there's none, we populate the matches with the commands' names
                 self.matches = self.commands.keys()
 
             self.matches.sort ()
