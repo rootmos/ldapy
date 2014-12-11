@@ -1,7 +1,10 @@
 
+
+packages=commandline,node,connection
+
 .PHONY: test
 test:
-	nosetests
+	nosetests --with-coverage --cover-package=$(packages) --cover-xml
 
 .PHONY: clean
 clean:
