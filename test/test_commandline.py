@@ -5,6 +5,7 @@ import mock
 import pexpect
 import os
 import sys
+import syslog
 from commandline import Commandline, Command, NoSuchCommand
 
 class Parser (unittest.TestCase):
@@ -176,6 +177,7 @@ class Completer (unittest.TestCase):
 
         child.expect ("\$")
         child.send("cmd \t\n")
+        child.send("cmd a b\t\n")
         child.sendline ("quit")
         child.wait ()
         assert child.exitstatus == 0
@@ -188,7 +190,8 @@ class Completer (unittest.TestCase):
         cli = Commandline ([cmd])
         cli.loop ()
 
-        assert cmd.complete.called
+        calls = [mock.call([]), mock.call(["a", "b"])]
+        assert cmd.complete.call_args_list == calls
 
 
 
