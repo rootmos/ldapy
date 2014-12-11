@@ -170,5 +170,26 @@ class Completer (unittest.TestCase):
 
         assert child.exitstatus == 0
 
+    def test_commands_own_completer_is_called (self):
+        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+
+        child.expect ("\$")
+        child.send("cmd \t")
+        child.sendcontrol ("c")
+        child.sendline ("quit")
+        child.wait ()
+        assert child.exitstatus == 0
+
+    @staticmethod
+    def sut_commands_own_completer_is_called (self):
+        cmd = Command ("cmd")
+        cmd.complete = mock.MagicMock ()
+
+        cli = Commandline ([cmd1, cmd2])
+        cli.loop ()
+
+        assert cmd.complete.called
+
+
 
 
