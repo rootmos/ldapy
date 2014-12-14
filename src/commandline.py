@@ -6,9 +6,6 @@ class Command:
         self.command = command
         self.options = options
 
-    def help (self):
-        pass
-
     def __call__ (self, args):
         pass
 
