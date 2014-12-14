@@ -18,6 +18,7 @@ class Connection:
         self.uri = uri
         self.ldap = ldap.initialize (uri)
         self.connected = False
+        self._roots = None
 
     def _raise_error (self, msg):
         raise ConnectionError (self, msg)
@@ -31,4 +32,12 @@ class Connection:
             self._raise_error (Connection._bad_auth_error_msg % who)
 
         self.connected = True
+
+    @property
+    def roots (self):
+        if not self._roots:
+            results = self.ldap.search_s ("", ldap.SCOPE_BASE, attrlist = ["namingContexts"])
+            self._roots = results[0][1]["namingContexts"]
+
+        return self._roots
 

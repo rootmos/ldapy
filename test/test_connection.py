@@ -18,6 +18,16 @@ class BasicConnection(unittest.TestCase):
         self.con.bind (configuration.admin, configuration.admin_password)
         self.assertTrue (self.con.connected)
 
+class Utilities (unittest.TestCase):
+    def setUp (self):
+        self.con = Connection (configuration.uri)
+        self.con.bind (configuration.admin, configuration.admin_password)
+        assert self.con.connected
+
+    def test_find_roots (self):
+        root = "dc=nodomain"
+        self.assertIn (root, self.con.roots)
+
 class ConnectionErrors (unittest.TestCase):
 
     def test_bind_connect_error (self):
