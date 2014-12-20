@@ -26,7 +26,7 @@ class Node:
     _dn_does_not_exist = "DN does not exits: %s"
 
     def __init__ (self, con, dn, attributes = None):
-        logging.debug ("Creating Node with DN=[%s]" % dn)
+        logging.info ("Creating Node with DN=[%s]" % dn)
         self.con = con
         self.dn = dn
         self.parent = None
