@@ -11,14 +11,7 @@ class BasicLdapyTests (unittest.TestCase):
 
     def test_list_roots (self):
         ldapy = Ldapy (self.con)
-
-        expect = self.con.roots
-        print "Expect: ", expect
-
-        got = ldapy.children
-        print "Got: ", got
-
-        self.assertListEqual (expect, got)
+        self.assertIn ("dc=nodomain", ldapy.children)
 
     def test_change_DN_to_root (self):
         ldapy = Ldapy (self.con)
