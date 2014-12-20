@@ -1,6 +1,7 @@
 import connection
 import ldap
 import ldap.dn
+import logging
 
 class DNError (Exception):
     def __init__ (self, dn):
@@ -25,6 +26,7 @@ class Node:
     _dn_does_not_exist = "DN does not exits: %s"
 
     def __init__ (self, con, dn, attributes = None):
+        logging.debug ("Creating Node with DN=[%s]" % dn)
         self.con = con
         self.dn = dn
         self.parent = None
@@ -33,6 +35,7 @@ class Node:
 
         # If we were'n given a dn, then we populate the Node with the roots
         if not self.dn:
+            logging.debug ("Populating root node with roots: %s" % self.con.roots)
             self._children = []
             for root in self.con.roots:
                 node = Node (self.con, root)
@@ -53,10 +56,12 @@ class Node:
             return
 
         try:
+            logging.debug ("Getting attributes for DN=[%s]" % self.dn)
             nodes = self.con.ldap.search_s (self.dn, ldap.SCOPE_BASE)
             node = nodes[0]
             self.dn = node[0]
             self.attributes = node[1]
+            logging.debug ("Attributes: %s" % self.attributes)
         except ldap.INVALID_DN_SYNTAX:
             raise DNError (self.dn)
         except ldap.NO_SUCH_OBJECT:
@@ -71,6 +76,8 @@ class Node:
                 node = Node (self.con, child[0], child[1])
                 node.parent = self
                 self._children.append (node)
+
+            logging.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
 
         return self._children
 
