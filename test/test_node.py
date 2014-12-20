@@ -62,6 +62,9 @@ class NodeErrors (unittest.TestCase):
         with self.assertRaises (DNError) as received:
             node = Node (self.con, malformed_dn)
 
+        msg = DNError._malformed_dn_message % malformed_dn
+        self.assertTrue (msg in str(received.exception))
+
     def test_dn_does_not_exist (self):
         bad_dn = "dc=does_not_exist"
         with self.assertRaises (NodeError) as received:

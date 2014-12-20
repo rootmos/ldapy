@@ -6,7 +6,7 @@ class DNError (Exception):
     def __init__ (self, dn):
         self.dn = dn
 
-    _malformed_dn_message = "Malformed DN: %s" 
+    _malformed_dn_message = "Malformed DN: %s"
 
     def __str__ (self):
         return DNError._malformed_dn_message % self.dn
