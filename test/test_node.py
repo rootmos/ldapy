@@ -52,6 +52,13 @@ class BasicNodeTests (unittest.TestCase):
 
         assert leaf.relativeDN ("dc=out_of_tree") == str (leaf)
 
+    def test_relative_children (self):
+        dn = "dc=nodomain"
+        node = Node (self.con, dn)
+
+        relative = ["ou=People", "ou=Groups", "cn=admin"]
+
+        self.assertItemsEqual (node.relativeChildren.keys(), relative)
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):

@@ -29,6 +29,7 @@ class Node:
         self.dn = dn
         self.parent = None
         self._children = None
+        self._relativeChildren = None
         if attributes is not None:
             self.attributes = attributes
         else:
@@ -56,6 +57,16 @@ class Node:
                 self._children.append (node)
 
         return self._children
+
+    @property
+    def relativeChildren (self):
+        if self._relativeChildren is None:
+            self._relativeChildren = {}
+            for child in self.children:
+                self._relativeChildren[child.relativeDN()] = child
+
+        return self._relativeChildren
+
 
     def relativeDN (self, to = None):
         if not to:
