@@ -32,6 +32,27 @@ class BasicNodeTests (unittest.TestCase):
         self.assertEqual (child.parent, parent)
         self.assertIn("posixAccount", child.attributes["objectClass"])
 
+    def test_relative_parent (self):
+        dn ="ou=People,dc=nodomain"
+        parent = Node (self.con, dn)
+
+        child = parent.children[0]
+
+        assert child.relativeDN () == "uid=john"
+
+    def test_relative_superparent (self):
+        dn = "uid=john,ou=People,dc=nodomain"
+        leaf = Node (self.con, dn)
+
+        assert leaf.relativeDN ("dc=nodomain") == "uid=john,ou=People"
+
+    def test_relative_out_of_tree (self):
+        dn = "uid=john,ou=People,dc=nodomain"
+        leaf = Node (self.con, dn)
+
+        assert leaf.relativeDN ("dc=out_of_tree") == str (leaf)
+
+
 class NodeErrors (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()

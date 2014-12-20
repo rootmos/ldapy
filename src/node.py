@@ -1,5 +1,6 @@
 import connection
 import ldap
+import ldap.dn
 
 class DNError (Exception):
     def __init__ (self, dn):
@@ -55,4 +56,22 @@ class Node:
                 self._children.append (node)
 
         return self._children
+
+    def relativeDN (self, to = None):
+        if not to:
+            to = self.parent
+
+        toDN = ldap.dn.str2dn (str(to))
+        myDN = ldap.dn.str2dn (self.dn)
+
+        for dn in reversed (toDN):
+            if dn == myDN[-1]:
+                myDN.pop()
+            else:
+                break
+
+        return ldap.dn.dn2str (myDN)
+
+    def __str__ (self):
+        return self.dn
 
