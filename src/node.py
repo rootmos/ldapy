@@ -24,6 +24,7 @@ class Node:
     """Class representing a node in the database"""
 
     _dn_does_not_exist = "DN does not exits: %s"
+    _attributes_failed = "Unable to obtain attributes for: %s"
 
     def __init__ (self, con, dn, attributes = None):
         logging.info ("Creating Node with DN=[%s]" % dn)
@@ -38,9 +39,12 @@ class Node:
             logging.debug ("Populating root node with roots: %s" % self.con.roots)
             self._children = []
             for root in self.con.roots:
-                node = Node (self.con, root)
-                node.parent = self
-                self._children.append (node)
+                try:
+                    node = Node (self.con, root)
+                    node.parent = self
+                    self._children.append (node)
+                except NodeError as e:
+                    logging.error (e)
 
         # If we were given our attributes, thank the caller, otherwise we
         # populate them ourselves
@@ -66,6 +70,8 @@ class Node:
             raise DNError (self.dn)
         except ldap.NO_SUCH_OBJECT:
             raise NodeError (self, Node._dn_does_not_exist % self.dn)
+        except ldap.OTHER:
+            raise NodeError (self, Node._attributes_failed % self.dn)
 
     @property
     def children (self):
