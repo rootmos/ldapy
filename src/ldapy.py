@@ -3,19 +3,19 @@ from node import Node
 class Ldapy:
     def __init__ (self, connection):
         self.connection = connection
-        self.cwd = Node (self.connection, "")
+        self._cwd = Node (self.connection, "")
 
     @property
     def cwd (self):
-        return self.cwd.dn
+        return self._cwd.dn
 
     @property
     def attributes (self):
-        return self.cwd.attributes
+        return self._cwd.attributes
 
     @property
     def children (self):
-        return self.cwd.relativeChildren.keys ()
+        return self._cwd.relativeChildren.keys ()
 
     def changeDN (self, to):
-        self.cwd = self.cwd.relativeChildren[to]
+        self._cwd = self._cwd.relativeChildren[to]
