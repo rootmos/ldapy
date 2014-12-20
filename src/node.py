@@ -45,6 +45,7 @@ class Node:
                     self._children.append (node)
                 except NodeError as e:
                     logging.error (e)
+                    logging.error ("Skipping root %s" % root)
 
         # If we were given our attributes, thank the caller, otherwise we
         # populate them ourselves
