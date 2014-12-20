@@ -56,7 +56,7 @@ class BasicNodeTests (unittest.TestCase):
         dn = "dc=nodomain"
         node = Node (self.con, dn)
 
-        expect = ["ou=People", "ou=Groups", "cn=admin"]
+        expect = ["ou=People", "ou=Groups"]
         print "Expecting: ", expect
 
         relative = node.relativeChildren.keys ()
