@@ -1,0 +1,24 @@
+#!/usr/bin/python
+
+from commandline import Commandline
+from ldapy import Ldapy
+from commands import List, ChangeDN, PrintWorkingDN
+import connection
+
+
+# Test data
+uri = "ldap://localhost"
+admin = "cn=admin,dc=nodomain"
+admin_password = "foobar"
+
+if __name__ == "__main__":
+    con = connection.Connection (uri)
+    con.bind (admin, admin_password)
+
+    ldapy = Ldapy (con)
+
+    commands = [List (ldapy), ChangeDN (ldapy), PrintWorkingDN (ldapy)]
+
+    cli = Commandline (commands)
+    cli.loop ()
+
