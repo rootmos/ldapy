@@ -8,6 +8,5 @@ install:
 # command to run tests
 script:
     - make
-    - make dump
 after_success: coveralls
 
