@@ -30,6 +30,17 @@ class Node:
         self.parent = None
         self._children = None
         self._relativeChildren = None
+
+        # If we were'n given a dn, then we populate the Node with the roots
+        if not dn:
+            self._children = []
+            for root in self.con.roots:
+                node = Node (self.con, root)
+                node.parent = self
+                self._children.append (node)
+
+        # If we were given our attributes, thank the caller, otherwise we
+        # populate them ourselves
         if attributes is not None:
             self.attributes = attributes
         else:
