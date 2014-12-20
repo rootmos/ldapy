@@ -32,7 +32,7 @@ class Node:
         self._relativeChildren = None
 
         # If we were'n given a dn, then we populate the Node with the roots
-        if not dn:
+        if not self.dn:
             self._children = []
             for root in self.con.roots:
                 node = Node (self.con, root)
@@ -47,6 +47,11 @@ class Node:
             self._populateAttributes ()
 
     def _populateAttributes (self):
+        # If we are the root node, then we don't have any attributes
+        if not self.dn:
+            self.attributes = []
+            return
+
         try:
             nodes = self.con.ldap.search_s (self.dn, ldap.SCOPE_BASE)
             node = nodes[0]
