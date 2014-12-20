@@ -56,9 +56,13 @@ class BasicNodeTests (unittest.TestCase):
         dn = "dc=nodomain"
         node = Node (self.con, dn)
 
-        relative = ["ou=People", "ou=Groups", "cn=admin"]
+        expect = ["ou=People", "ou=Groups", "cn=admin"]
+        print "Expecting: ", expect
 
-        self.assertItemsEqual (node.relativeChildren.keys(), relative)
+        relative = node.relativeChildren.keys ()
+        print "Got: ", relative
+
+        self.assertItemsEqual (expect, relative)
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):
