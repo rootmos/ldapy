@@ -1,6 +1,6 @@
 
 
-packages=commandline,node,connection,ldapy
+packages=commandline,node,connection,ldapy,commands
 
 .PHONY: test
 test:
