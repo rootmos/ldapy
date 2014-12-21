@@ -1,6 +1,6 @@
 
 from commandline import Command
-from ldapy import Ldapy
+from ldapy import Ldapy, NoSuchDN
 
 class List (Command):
     def __init__ (self, ldapy):
@@ -16,7 +16,10 @@ class ChangeDN (Command):
         self.ldapy = ldapy
 
     def __call__ (self, args):
-        self.ldapy.changeDN (args[0])
+        try:
+            self.ldapy.changeDN (args[0])
+        except NoSuchDN as e:
+            print e
 
 class PrintWorkingDN (Command):
     def __init__ (self, ldapy):

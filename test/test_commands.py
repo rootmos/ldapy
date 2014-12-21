@@ -1,22 +1,50 @@
 import configuration
-import ldapy
+from ldapy import Ldapy, NoSuchDN
 import unittest
 import mock
 from commands import ChangeDN, List, PrintWorkingDN
 
 def getLdapy ():
     con = configuration.getConnection ()
-    return ldapy.Ldapy (con)
+    return Ldapy (con)
 
 class ChangeDNTests (unittest.TestCase):
 
-    def setUp (self):
-        self.ldapy = getLdapy ()
-
     def test_successful_cd (self):
-        cmd = ChangeDN (self.ldapy)
+        ldapy = getLdapy ()
+        cmd = ChangeDN (ldapy)
         cmd (["dc=nodomain"])
-        self.assertEqual (self.ldapy.cwd, "dc=nodomain")
+        self.assertEqual (ldapy.cwd, "dc=nodomain")
+
+    def test_unsuccessful_cd_to_root (self):
+        ldapy = getLdapy ()
+        cmd = ChangeDN (ldapy)
+
+        nonexistent = "dc=nonexistent"
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([nonexistent])
+
+        msg = NoSuchDN._no_such_DN_in_root % nonexistent
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_unsuccessful_cd_to_child (self):
+        ldapy = getLdapy ()
+        root = "dc=nodomain"
+        ldapy.changeDN (root)
+
+        cmd = ChangeDN (ldapy)
+
+        nonexistent = "ou=Foobar"
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([nonexistent])
+
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, root) 
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
 
 class ListTests (unittest.TestCase):
 
