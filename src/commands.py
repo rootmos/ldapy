@@ -1,6 +1,6 @@
 
 from commandline import Command
-from ldapy import Ldapy, NoSuchDN
+from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 
 class List (Command):
     def __init__ (self, ldapy):
@@ -17,7 +17,10 @@ class ChangeDN (Command):
 
     def __call__ (self, args):
         if args[0] == "..":
-            self.ldapy.goUpOneLevel ()
+            try:
+                self.ldapy.goUpOneLevel ()
+            except AlreadyAtRoot as e:
+                print e
         else:
             try:
                 self.ldapy.changeDN (args[0])

@@ -14,6 +14,13 @@ class NoSuchDN (Exception):
         else:
             return NoSuchDN._no_such_DN_in_root % (self.relDN)
 
+class AlreadyAtRoot (Exception):
+    _already_at_root = "Already at root."
+
+    def __str__ (self):
+        return AlreadyAtRoot._already_at_root
+
+
 class Ldapy:
     def __init__ (self, connection):
         self.connection = connection
@@ -38,4 +45,10 @@ class Ldapy:
             raise NoSuchDN (to, self.cwd)
 
     def goUpOneLevel (self):
-        self._cwd = self._cwd.parent
+        # Test if we can go furter up
+        if self._cwd.parent:
+            self._cwd = self._cwd.parent
+        else:
+            # Otherwise we complain
+            raise AlreadyAtRoot ()
+

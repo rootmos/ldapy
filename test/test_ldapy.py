@@ -1,7 +1,7 @@
 import unittest
 import configuration
 
-from ldapy import Ldapy, NoSuchDN
+from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 
 
 class BasicLdapyTests (unittest.TestCase):
@@ -62,3 +62,13 @@ class ErrorLdapyTests (unittest.TestCase):
 
         expected = NoSuchDN (nonexistent, root)
         self.assertEqual (str(received.exception), str(expected))
+
+    def test_up_one_level_too_far (self):
+        ldapy = Ldapy (self.con)
+
+        with self.assertRaises(AlreadyAtRoot) as received:
+            ldapy.goUpOneLevel ()
+
+        expected = AlreadyAtRoot ()
+        self.assertEqual (str(received.exception), str(expected))
+

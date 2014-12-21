@@ -1,5 +1,5 @@
 import configuration
-from ldapy import Ldapy, NoSuchDN
+from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 import unittest
 import mock
 from commands import ChangeDN, List, PrintWorkingDN
@@ -56,6 +56,18 @@ class ChangeDNTests (unittest.TestCase):
             cmd ([nonexistent])
 
         msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, root) 
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_unsuccessful_cd_one_level_too_far (self):
+        ldapy = getLdapy ()
+
+        cmd = ChangeDN (ldapy)
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([".."])
+
+        msg = AlreadyAtRoot._already_at_root
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
