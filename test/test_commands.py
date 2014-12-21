@@ -13,8 +13,22 @@ class ChangeDNTests (unittest.TestCase):
     def test_successful_cd (self):
         ldapy = getLdapy ()
         cmd = ChangeDN (ldapy)
-        cmd (["dc=nodomain"])
-        self.assertEqual (ldapy.cwd, "dc=nodomain")
+        root = "dc=nodomain"
+        cmd ([root])
+        self.assertEqual (ldapy.cwd, root)
+
+    def test_successful_cd_to_parent (self):
+        ldapy = getLdapy ()
+        root = "dc=nodomain"
+        child = "ou=People"
+        ldapy.changeDN (root)
+        ldapy.changeDN (child)
+
+        cmd = ChangeDN (ldapy)
+        cmd ([".."])
+
+        self.assertEqual (ldapy.cwd, root)
+        
 
     def test_unsuccessful_cd_to_root (self):
         ldapy = getLdapy ()

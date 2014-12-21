@@ -36,3 +36,6 @@ class Ldapy:
             self._cwd = self._cwd.relativeChildren[to]
         except KeyError:
             raise NoSuchDN (to, self.cwd)
+
+    def goUpOneLevel (self):
+        self._cwd = self._cwd.parent

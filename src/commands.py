@@ -16,10 +16,13 @@ class ChangeDN (Command):
         self.ldapy = ldapy
 
     def __call__ (self, args):
-        try:
-            self.ldapy.changeDN (args[0])
-        except NoSuchDN as e:
-            print e
+        if args[0] == "..":
+            self.ldapy.goUpOneLevel ()
+        else:
+            try:
+                self.ldapy.changeDN (args[0])
+            except NoSuchDN as e:
+                print e
 
 class PrintWorkingDN (Command):
     def __init__ (self, ldapy):
