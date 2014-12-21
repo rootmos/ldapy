@@ -52,3 +52,5 @@ class Ldapy:
             # Otherwise we complain
             raise AlreadyAtRoot ()
 
+    def completeChild (self, text):
+        return [ i.relativeDN () for i in self._cwd.children if i.dn.startswith (text)] 

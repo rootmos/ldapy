@@ -35,6 +35,33 @@ class BasicLdapyTests (unittest.TestCase):
         ldapy.goUpOneLevel ()
         self.assertEqual (ldapy.cwd, root)
 
+class ChildCompleter (unittest.TestCase):
+
+    def setUp (self):
+        self.con = configuration.getConnection ()
+        self.ldapy = Ldapy (self.con)
+        root = "dc=nodomain"
+        self.ldapy.changeDN (root)
+        
+        self.child1 = "ou=People"
+        self.child2 = "ou=Groups"
+
+    def test_empty_input (self):
+        matches = self.ldapy.completeChild ("")
+        self.assertListEqual (matches, [self.child1, self.child2])
+
+    def test_matches_several (self):
+        matches = self.ldapy.completeChild ("ou=")
+        self.assertListEqual (matches, [self.child1, self.child2])
+
+    def test_matches_unique (self):
+        matches = self.ldapy.completeChild (self.child1[:-1])
+        self.assertListEqual (matches, [self.child1])
+
+    def test_no_matches (self):
+        matches = self.ldapy.completeChild ("dc=nonexistent")
+        self.assertListEqual (matches, [])
+
 
 class ErrorLdapyTests (unittest.TestCase):
     def setUp (self):
