@@ -27,13 +27,12 @@ class ExitCommand (Command):
     def __call__ (self, args):
         raise ExitCommandline
 
-import syslog
-
 class Commandline:
     def __init__ (self, commands, prompt = "$ "):
         self.prompt = prompt
         readline.parse_and_bind('tab: complete')
         readline.set_completer (self.complete)
+        readline.set_completer_delims (" \t")
         self.commands = { "exit" : ExitCommand(), "quit" : ExitCommand() }
         for cmd in commands:
             self.commands[cmd.command] = cmd
@@ -77,7 +76,7 @@ class Commandline:
                 # commands completer to populate the matches
                 # (And if the string ends with a space, then surely we have more than a word.)
                 words = shlex.split (line)
-                if len(words) > 1 or (len(words)==1 and line.endswith(" ")):
+                if len(words) > 1 or (len(words)==1 and (line.endswith(" ") or line.endswith("\t"))):
                     cmd_name = words.pop (0)
                     try:
                         cmd = self.commands[cmd_name]

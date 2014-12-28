@@ -23,6 +23,12 @@ class ChangeDN (Command):
         except NoSuchDN as e:
             print e
 
+    def complete (self, words):
+        if len(words):
+            return self.ldapy.completeChild (words[0])
+        else:
+            return self.ldapy.children
+
 class PrintWorkingDN (Command):
     def __init__ (self, ldapy):
         Command.__init__ (self, "pwd")
