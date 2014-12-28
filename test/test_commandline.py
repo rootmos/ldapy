@@ -127,6 +127,17 @@ class Completer (unittest.TestCase):
 
         assert child.exitstatus == 0
 
+    def test_survives_completion_with_bogus_command (self):
+        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+
+        child.expect ("\$")
+        child.send("fooba\t\n")
+        child.send("exit\n")
+        child.wait ()
+
+        assert child.exitstatus == 0
+
+
 
     @staticmethod
     def sut_completer_called (args):
