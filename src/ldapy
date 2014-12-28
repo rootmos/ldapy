@@ -2,7 +2,7 @@
 
 from commandline import Commandline
 from ldapy import Ldapy
-from commands import List, ChangeDN, PrintWorkingDN
+from commands import List, ChangeDN, PrintWorkingDN, Cat
 import connection
 
 
@@ -17,7 +17,8 @@ if __name__ == "__main__":
 
     ldapy = Ldapy (con)
 
-    commands = [List (ldapy), ChangeDN (ldapy), PrintWorkingDN (ldapy)]
+    commands = [List (ldapy), ChangeDN (ldapy), PrintWorkingDN (ldapy),\
+                Cat (ldapy)]
 
     cli = Commandline (commands)
     cli.loop ()

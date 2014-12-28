@@ -57,7 +57,7 @@ class Node:
     def _populateAttributes (self):
         # If we are the root node, then we don't have any attributes
         if not self.dn:
-            self.attributes = []
+            self.attributes = {}
             return
 
         try:

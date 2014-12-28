@@ -34,3 +34,14 @@ class PrintWorkingDN (Command):
 
     def __call__ (self, args):
         print self.ldapy.cwd
+
+class Cat (Command):
+    def __init__ (self, ldapy):
+        Command.__init__ (self, "cat")
+        self.ldapy = ldapy
+
+    def __call__ (self, args):
+        attributes = self.ldapy.getAttributes (args[0])
+        for attribute, value_list in attributes.items():
+            for value in value_list:
+                print "%s: %s" % (attribute, value)

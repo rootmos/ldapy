@@ -34,15 +34,29 @@ class Ldapy:
     def attributes (self):
         return self._cwd.attributes
 
+    def _resolveRelativeDN (self, relDN):
+        if relDN == ".":
+            return self._cwd
+        elif relDN == "..":
+            if self._cwd.parent:
+                return self._cwd.parent
+            else:
+                raise AlreadyAtRoot ()
+        else:
+            try:
+                return self._cwd.relativeChildren[relDN]
+            except KeyError:
+                raise NoSuchDN (relDN, self.cwd)
+
+    def getAttributes (self, relDN):
+        return self._resolveRelativeDN (relDN).attributes
+
     @property
     def children (self):
         return self._cwd.relativeChildren.keys ()
 
     def changeDN (self, to):
-        try:
-            self._cwd = self._cwd.relativeChildren[to]
-        except KeyError:
-            raise NoSuchDN (to, self.cwd)
+        self._cwd = self._resolveRelativeDN (to)
 
     def goUpOneLevel (self):
         # Test if we can go furter up

@@ -35,6 +35,22 @@ class BasicLdapyTests (unittest.TestCase):
         ldapy.goUpOneLevel ()
         self.assertEqual (ldapy.cwd, root)
 
+    def test_getAttributes_self_and_parent (self):
+        ldapy = Ldapy (self.con)
+
+        root = "dc=nodomain"
+        child = "ou=People"
+        ldapy.changeDN (root)
+        ldapy.changeDN (child)
+
+        self.assertIn ("organizationalUnit", ldapy.getAttributes (".")["objectClass"])
+        self.assertIn ("top", ldapy.getAttributes ("..")["objectClass"])
+
+    def test_superroot_has_empty_attributes (self):
+        ldapy = Ldapy (self.con)
+        self.assertDictEqual ({}, ldapy.attributes)
+
+
 class ChildCompleter (unittest.TestCase):
 
     def setUp (self):
@@ -57,6 +73,9 @@ class ChildCompleter (unittest.TestCase):
     def test_matches_unique (self):
         matches = self.ldapy.completeChild (self.child1[:-1])
         self.assertListEqual (matches, [self.child1])
+
+        matches = self.ldapy.completeChild (self.child2[:-1])
+        self.assertListEqual (matches, [self.child2])
 
     def test_no_matches (self):
         matches = self.ldapy.completeChild ("dc=nonexistent")
@@ -98,4 +117,3 @@ class ErrorLdapyTests (unittest.TestCase):
 
         expected = AlreadyAtRoot ()
         self.assertEqual (str(received.exception), str(expected))
-

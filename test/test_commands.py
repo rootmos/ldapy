@@ -2,7 +2,7 @@ import configuration
 from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 import unittest
 import mock
-from commands import ChangeDN, List, PrintWorkingDN
+from commands import ChangeDN, List, PrintWorkingDN, Cat
 
 def getLdapy ():
     con = configuration.getConnection ()
@@ -28,7 +28,7 @@ class ChangeDNTests (unittest.TestCase):
         cmd ([".."])
 
         self.assertEqual (ldapy.cwd, root)
-        
+
 
     def test_unsuccessful_cd_to_root (self):
         ldapy = getLdapy ()
@@ -55,7 +55,7 @@ class ChangeDNTests (unittest.TestCase):
         with mock.patch('sys.stdout.write') as print_mock:
             cmd ([nonexistent])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, root) 
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, root)
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
@@ -101,6 +101,25 @@ class PrintWorkingDNTests (unittest.TestCase):
 
         expect_calls = [mock.call("ou=People,dc=nodomain"), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
-        
 
+class CatTests (unittest.TestCase):
 
+    def setUp (self):
+        self.ldapy = getLdapy ()
+        self.ldapy.changeDN ("dc=nodomain")
+
+    def test_cat_self (self):
+        cmd = Cat (self.ldapy)
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd (["."])
+
+        wanted_call = mock.call ("objectClass: top")
+        self.assertIn (wanted_call, print_mock.call_args_list)
+
+    def test_cat_child (self):
+        cmd = Cat (self.ldapy)
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd (["ou=People"])
+
+        wanted_call = mock.call ("objectClass: organizationalUnit")
+        self.assertIn (wanted_call, print_mock.call_args_list)
