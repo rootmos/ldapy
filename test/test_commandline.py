@@ -75,6 +75,12 @@ class BasicFunctionality (unittest.TestCase):
         with mock.patch('__builtin__.raw_input', side_effect=EOFError):
             cli.loop ()
 
+    def test_ctrl_c (self):
+        cli = Commandline ([])
+
+        with mock.patch('__builtin__.raw_input', side_effect=KeyboardInterrupt):
+            cli.loop ()
+
     def test_no_such_command (self):
         cli = Commandline ([])
 

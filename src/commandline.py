@@ -1,5 +1,6 @@
 import readline
 import shlex
+import sys
 
 class Command:
     def __init__ (self, command, options = []):
@@ -59,6 +60,9 @@ class Commandline:
                     self.parse_and_dispatch (line)
                 except NoSuchCommand as e:
                     print e
+        except KeyboardInterrupt:
+            sys.stdout.write ("\n")
+            return
         except EOFError:
             return
         except ExitCommandline:
