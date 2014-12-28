@@ -106,7 +106,8 @@ class CatTests (unittest.TestCase):
 
     def setUp (self):
         self.ldapy = getLdapy ()
-        self.ldapy.changeDN ("dc=nodomain")
+        self.root = "dc=nodomain"
+        self.ldapy.changeDN (self.root)
 
     def test_cat_self (self):
         cmd = Cat (self.ldapy)
@@ -142,4 +143,17 @@ class CatTests (unittest.TestCase):
         msg = AlreadyAtRoot._already_at_root
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_unsuccessful_cat_of_nonexistent_child (self):
+        cmd = Cat (self.ldapy)
+
+        nonexistent = "ou=Foobar"
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([nonexistent])
+
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
 

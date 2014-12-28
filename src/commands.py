@@ -44,4 +44,6 @@ class Cat (Command):
                     print "%s: %s" % (attribute, value)
         except AlreadyAtRoot as e:
             print e
+        except NoSuchDN as e:
+            print e
 
