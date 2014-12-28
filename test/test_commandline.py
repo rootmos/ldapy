@@ -6,7 +6,7 @@ import pexpect
 import os
 import sys
 import syslog
-from commandline import Commandline, Command, NoSuchCommand
+from commandline import Commandline, Command, NoSuchCommand, ExitCommand
 
 class Parser (unittest.TestCase):
 
@@ -105,6 +105,15 @@ class BasicFunctionality (unittest.TestCase):
 
         with mock.patch('__builtin__.raw_input', return_value='quit'):
             cli.loop ()
+
+    def test_exit_help (self):
+        cmd = ExitCommand()
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = ExitCommand._usage % "exit"
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_eof (self):
         cli = Commandline ([])

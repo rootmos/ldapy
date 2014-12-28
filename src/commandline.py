@@ -23,10 +23,17 @@ class ExitCommandline (Exception):
 
 class ExitCommand (Command):
     def __init__ (self):
-        Command.__init__ (self, "exit")
+        self.name = "exit"
+        Command.__init__ (self, self.name)
 
     def __call__ (self, args):
         raise ExitCommandline
+
+    _usage = """Usage: %s
+Exit ldapy."""
+
+    def usage (self, words):
+        print ExitCommand._usage % self.name
 
 class Commandline:
     def __init__ (self, commands, prompt = "$ "):
