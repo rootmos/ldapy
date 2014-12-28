@@ -123,3 +123,23 @@ class CatTests (unittest.TestCase):
 
         wanted_call = mock.call ("objectClass: organizationalUnit")
         self.assertIn (wanted_call, print_mock.call_args_list)
+
+    def test_cat_superroot (self):
+        cmd = Cat (self.ldapy)
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([".."])
+
+        self.assertListEqual (print_mock.call_args_list, [])
+
+    def test_unsuccessful_cat_parent_of_superroot (self):
+        ldapy = getLdapy ()
+        cmd = Cat (ldapy)
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([".."])
+
+        msg = AlreadyAtRoot._already_at_root
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
