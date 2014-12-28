@@ -46,7 +46,10 @@ class Commandline:
         cmd_name = words.pop (0)
         try:
             cmd = self.commands[cmd_name]
-            return cmd (words)
+            if ("-h" in words) or ("--help" in words):
+                return cmd.usage (words)
+            else:
+                return cmd (words)
         except KeyError:
             raise NoSuchCommand (cmd_name)
 

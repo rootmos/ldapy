@@ -54,6 +54,43 @@ class Parser (unittest.TestCase):
 
         cmd.__call__.assert_called_with (args)
 
+    def test_help_option (self):
+        cmd = Command ("cmd")
+        cmd.usage = mock.MagicMock()
+        cli = Commandline ([cmd])
+
+        # Test short option
+        cmdline = "cmd -h"
+        args = ["-h"]
+
+        cli.parse_and_dispatch (cmdline)
+        cmd.usage.assert_called_with (args)
+        cmd.usage.reset_mock ()
+
+        # Test short option, in the middle of cmdline
+        cmdline = "cmd a -h b"
+        args = ["a", "-h", "b"]
+
+        cli.parse_and_dispatch (cmdline)
+        cmd.usage.assert_called_with (args)
+        cmd.usage.reset_mock ()
+
+        # Test long option
+        cmdline = "cmd --help"
+        args = ["--help"]
+
+        cli.parse_and_dispatch (cmdline)
+        cmd.usage.assert_called_with (args)
+        cmd.usage.reset_mock ()
+
+        # Test long option, in the middle of cmdline
+        cmdline = "cmd a --help b"
+        args = ["a", "--help", "b"]
+
+        cli.parse_and_dispatch (cmdline)
+        cmd.usage.assert_called_with (args)
+        cmd.usage.reset_mock ()
+
 
 class BasicFunctionality (unittest.TestCase):
 
