@@ -91,6 +91,16 @@ class ChangeDNTests (unittest.TestCase):
         child = ["ou=People"]
         self.assertListEqual (child, matches)
 
+    def test_usage (self):
+        ldapy = getLdapy ()
+        cmd = ChangeDN (ldapy)
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = ChangeDN._usage % "cd"
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
 
 class ListTests (unittest.TestCase):
 
@@ -107,6 +117,15 @@ class ListTests (unittest.TestCase):
         expect_calls = [mock.call("ou=Groups\tou=People"), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
+    def test_usage (self):
+        cmd = List (self.ldapy)
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = List._usage % ("ls", self.ldapy.cwd)
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
 class PrintWorkingDNTests (unittest.TestCase):
 
     def setUp (self):
@@ -120,6 +139,15 @@ class PrintWorkingDNTests (unittest.TestCase):
             cmd ([])
 
         expect_calls = [mock.call("ou=People,dc=nodomain"), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_usage (self):
+        cmd = PrintWorkingDN (self.ldapy)
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = PrintWorkingDN._usage % ("pwd", self.ldapy.cwd)
+        expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
 class CatTests (unittest.TestCase):
@@ -195,4 +223,13 @@ class CatTests (unittest.TestCase):
         matches = cmd.complete (["ou=P"])
         child = ["ou=People"]
         self.assertListEqual (child, matches)
+
+    def test_usage (self):
+        cmd = Cat (self.ldapy)
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = Cat._usage % "cat"
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
 

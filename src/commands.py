@@ -4,15 +4,23 @@ from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 
 class List (Command):
     def __init__ (self, ldapy):
-        Command.__init__ (self, "ls")
+        self.name = "ls"
+        Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
     def __call__ (self, args):
         print "\t".join (self.ldapy.children)
 
+    _usage = """Usage: %s
+Lists children of current DN (currently: %s)."""
+
+    def usage (self, words):
+        print List._usage % (self.name, self.ldapy.cwd)
+
 class ChangeDN (Command):
     def __init__ (self, ldapy):
-        Command.__init__ (self, "cd")
+        self.name = "cd"
+        Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
     def __call__ (self, args):
@@ -29,17 +37,31 @@ class ChangeDN (Command):
         else:
             return self.ldapy.children
 
+    _usage = """Usage: %s relativeDN
+Changes DN to a child DN specified by relativeDN."""
+
+    def usage (self, words):
+        print ChangeDN._usage % self.name
+
 class PrintWorkingDN (Command):
     def __init__ (self, ldapy):
-        Command.__init__ (self, "pwd")
+        self.name = "pwd"
+        Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
     def __call__ (self, args):
         print self.ldapy.cwd
 
+    _usage = """Usage: %s
+Prints current DN (which currently is: %s)."""
+
+    def usage (self, words):
+        print PrintWorkingDN._usage % (self.name, self.ldapy.cwd)
+
 class Cat (Command):
     def __init__ (self, ldapy):
-        Command.__init__ (self, "cat")
+        self.name = "cat"
+        Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
     def __call__ (self, args):
@@ -58,3 +80,9 @@ class Cat (Command):
             return self.ldapy.completeChild (words[0])
         else:
             return self.ldapy.children
+
+    _usage = """Usage: %s relativeDN
+Prints the attributes of a DN specified by relativeDN."""
+
+    def usage (self, words):
+        print Cat._usage % self.name
