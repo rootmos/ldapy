@@ -71,6 +71,26 @@ class ChangeDNTests (unittest.TestCase):
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
+    def test_cd_completer (self):
+        ldapy = getLdapy ()
+        cmd = ChangeDN (ldapy)
+        root = "dc=nodomain"
+
+        # Test return all on empty list
+        matches = cmd.complete ([])
+        self.assertListEqual ([root], matches)
+
+        # Test several matches 
+        ldapy.changeDN (root)
+        children = ["ou=Groups","ou=People"]
+        matches = cmd.complete (["ou="])
+        self.assertItemsEqual (children, matches)
+
+        # Test unique match
+        matches = cmd.complete (["ou=P"])
+        child = ["ou=People"]
+        self.assertListEqual (child, matches)
+
 
 class ListTests (unittest.TestCase):
 
@@ -156,4 +176,23 @@ class CatTests (unittest.TestCase):
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
+    def test_cat_completer (self):
+        ldapy = getLdapy ()
+        cmd = Cat (ldapy)
+        root = "dc=nodomain"
+
+        # Test return all on empty list
+        matches = cmd.complete ([])
+        self.assertListEqual ([root], matches)
+
+        # Test several matches 
+        ldapy.changeDN (root)
+        children = ["ou=Groups","ou=People"]
+        matches = cmd.complete (["ou="])
+        self.assertItemsEqual (children, matches)
+
+        # Test unique match
+        matches = cmd.complete (["ou=P"])
+        child = ["ou=People"]
+        self.assertListEqual (child, matches)
 
