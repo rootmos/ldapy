@@ -59,12 +59,7 @@ class Ldapy:
         self._cwd = self._resolveRelativeDN (to)
 
     def goUpOneLevel (self):
-        # Test if we can go furter up
-        if self._cwd.parent:
-            self._cwd = self._cwd.parent
-        else:
-            # Otherwise we complain
-            raise AlreadyAtRoot ()
+        self.changeDN ("..")
 
     def completeChild (self, text):
-        return [ i.relativeDN () for i in self._cwd.children if i.dn.startswith (text)] 
+        return [ i.relativeDN () for i in self._cwd.children if i.dn.startswith (text)]
