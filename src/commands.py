@@ -53,3 +53,8 @@ class Cat (Command):
         except NoSuchDN as e:
             print e
 
+    def complete (self, words):
+        if len(words):
+            return self.ldapy.completeChild (words[0])
+        else:
+            return self.ldapy.children
