@@ -1,9 +1,3 @@
-dn: dc=nodomain
-changetype: add
-objectClass: top
-objectClass: dcObject
-objectClass: domain
-
 dn: ou=People,dc=nodomain
 objectClass: organizationalUnit
 ou: People

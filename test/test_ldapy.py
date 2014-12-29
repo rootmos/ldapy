@@ -65,7 +65,8 @@ class ChildCompleter (unittest.TestCase):
 
     def test_empty_input (self):
         matches = self.ldapy.completeChild ("")
-        self.assertListEqual (matches, [self.child1, self.child2])
+        self.assertIn (self.child1, matches)
+        self.assertIn (self.child2, matches)
 
     def test_matches_several (self):
         matches = self.ldapy.completeChild ("ou=")

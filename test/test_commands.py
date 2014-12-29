@@ -114,8 +114,13 @@ class ListTests (unittest.TestCase):
         with mock.patch('sys.stdout.write') as print_mock:
             cmd ([])
 
-        expect_calls = [mock.call("ou=Groups\tou=People"), mock.call("\n")]
-        self.assertListEqual (print_mock.call_args_list, expect_calls)
+        first_call = print_mock.call_args_list[0]
+        args = first_call[0]
+        first_arg = args[0]
+        result = first_arg.split("\t")
+
+        self.assertIn ("ou=Groups", result)
+        self.assertIn ("ou=People", result)
 
     def test_usage (self):
         cmd = List (self.ldapy)

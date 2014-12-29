@@ -1,0 +1,5 @@
+dn: dc=nodomain
+changetype: add
+objectClass: top
+objectClass: dcObject
+objectClass: domain
