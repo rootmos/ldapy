@@ -13,11 +13,6 @@ handler.setFormatter (logging.Formatter("%(levelname)s:%(name)s: %(message)s"))
 logger.addHandler (handler)
 logger.setLevel (logging.DEBUG)
 
-# Test data
-uri = "ldap://localhost"
-admin = "cn=admin,dc=nodomain"
-admin_password = "foobar"
-
 if __name__ == "__main__":
     ldapy = Ldapy ()
 
