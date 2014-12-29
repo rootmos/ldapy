@@ -1,4 +1,5 @@
 import unittest
+import mock
 import configuration
 
 from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
@@ -117,3 +118,24 @@ class ErrorLdapyTests (unittest.TestCase):
 
         expected = AlreadyAtRoot ()
         self.assertEqual (str(received.exception), str(expected))
+
+class ArgumentParserTests (unittest.TestCase):
+    def setUp (self):
+        self.con = configuration.getConnection ()
+
+    def test_neither_host_nor_uri_is_specified (self):
+        ldapy = Ldapy (self.con)
+
+        with mock.patch('logging.error') as error_mock:
+            ldapy.parseArguments ([])
+
+        error_mock.assert_called_with (Ldapy._neither_host_nor_uri_given)
+
+    def test_malformed_uri (self):
+        ldapy = Ldapy (self.con)
+
+        with mock.patch('logging.error') as error_mock:
+            ldapy.parseArguments (["foobar://lars"])
+
+        error_mock.assert_called_with (Ldapy._uri_malformed)
+

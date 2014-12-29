@@ -1,4 +1,7 @@
 from node import Node
+import argparse
+import logging
+import ldapurl
 
 class NoSuchDN (Exception):
     def __init__ (self, relDN, parent):
@@ -63,3 +66,40 @@ class Ldapy:
 
     def completeChild (self, text):
         return [ i.relativeDN () for i in self._cwd.children if i.dn.startswith (text)]
+
+
+    _neither_host_nor_uri_given = "Must specify either a host (--host) or an URI."
+    _both_host_and_uri_given_and_unequal = "Ambiguous host and URI specified."
+    _uri_malformed = "Invalid URI format given."
+
+    def parseArguments (self, args):
+        parser = argparse.ArgumentParser ()
+
+        parser.add_argument ("--host", "-H",
+                             help="Specifies host to connect to.")
+        parser.add_argument ("--port", "-p",
+                             help="Specifies which port to connect to on host.")
+        parser.add_argument ("URI", nargs="*", default=None,
+                help="Specifies URI to connect to, in the format: ldap://host[:port]")
+        parser.add_argument ("--bind-dn", "-D",
+                             help="Specifies DN used for binding.")
+        parser.add_argument ("--password", "-w",
+                             help="Specifies password used for binding.")
+
+        self.args = parser.parse_args (args)
+        return self.validateArguments ()
+
+    def validateArguments (self):
+        if not self.args.host and not self.args.URI:
+            logging.error (Ldapy._neither_host_nor_uri_given)
+            return False
+
+        if self.args.URI and len(self.args.URI) == 1:
+            try:
+                uri = ldapurl.LDAPUrl (self.args.URI[0])
+            except ValueError:
+                logging.error (Ldapy._uri_malformed)
+                return False
+
+        return True
+
