@@ -5,18 +5,23 @@ import logging
 logger = logging.getLogger("ldapy").getChild (__name__)
 
 class ConnectionError (Exception):
-    def __init__ (self, con, msg):
+    def __init__ (self, con, msg, info = None):
         self.con = con
         self.msg = msg
+        self.info = info
 
     def __str__ (self):
-        return "Connection(\"%s\"): %s" % (self.con.uri, self.msg)
+        if self.info:
+            return self.msg + " Info: " + self.info
+        else:
+            return self.msg
 
 class Connection:
     """The class managing the LDAP connection."""
 
-    _connection_error_msg = "Unable to connect to %s"
-    _bad_auth_error_msg = "Unable to authenticate user = %s"
+    _connection_error_msg = "Unable to connect to %s."
+    _bad_auth_error_msg = "Unable to authenticate user: %s."
+    _server_unwilling = "Server unwilling to perform requested operation."
 
     def __init__ (self, uri, traces = 0):
         logger.info ("Connecting to %s" % uri)
@@ -25,16 +30,22 @@ class Connection:
         self.connected = False
         self._roots = None
 
-    def _raise_error (self, msg):
-        raise ConnectionError (self, msg)
+    def _raise_error (self, msg, exception = None):
+        if exception and hasattr(exception, "message") and exception.message.has_key ("info"):
+            raise ConnectionError (self, msg, exception.message["info"])
+        else:
+            raise ConnectionError (self, msg)
+
 
     def bind (self, who, cred):
         try:
             self.ldap.simple_bind_s (who, cred)
-        except ldap.SERVER_DOWN:
-            self._raise_error (Connection._connection_error_msg % self.uri)
-        except ldap.INVALID_CREDENTIALS:
-            self._raise_error (Connection._bad_auth_error_msg % who)
+        except ldap.SERVER_DOWN as e:
+            self._raise_error (Connection._connection_error_msg % self.uri, e)
+        except ldap.INVALID_CREDENTIALS as e:
+            self._raise_error (Connection._bad_auth_error_msg % who, e)
+        except ldap.UNWILLING_TO_PERFORM as e:
+            self._raise_error (Connection._server_unwilling, e)
 
         self.connected = True
 
