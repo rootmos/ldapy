@@ -1,7 +1,9 @@
 import connection
 import ldap
 import ldap.dn
+
 import logging
+logger = logging.getLogger("ldapy").getChild(__name__)
 
 class DNError (Exception):
     def __init__ (self, dn):
@@ -27,7 +29,7 @@ class Node:
     _attributes_failed = "Unable to obtain attributes for: %s"
 
     def __init__ (self, con, dn, attributes = None):
-        logging.info ("Creating Node with DN=[%s]" % dn)
+        logger.info ("Creating Node with DN=[%s]" % dn)
         self.con = con
         self.dn = dn
         self.parent = None
@@ -36,7 +38,7 @@ class Node:
 
         # If we were'n given a dn, then we populate the Node with the roots
         if not self.dn:
-            logging.debug ("Populating root node with roots: %s" % self.con.roots)
+            logger.debug ("Populating root node with roots: %s" % self.con.roots)
             self._children = []
             for root in self.con.roots:
                 try:
@@ -44,8 +46,8 @@ class Node:
                     node.parent = self
                     self._children.append (node)
                 except NodeError as e:
-                    logging.error (e)
-                    logging.error ("Skipping root %s" % root)
+                    logger.error (e)
+                    logger.error ("Skipping root %s" % root)
 
         # If we were given our attributes, thank the caller, otherwise we
         # populate them ourselves
@@ -61,12 +63,11 @@ class Node:
             return
 
         try:
-            logging.debug ("Getting attributes for DN=[%s]" % self.dn)
             nodes = self.con.ldap.search_s (self.dn, ldap.SCOPE_BASE)
             node = nodes[0]
             self.dn = node[0]
             self.attributes = node[1]
-            logging.debug ("Attributes: %s" % self.attributes)
+            logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
         except ldap.INVALID_DN_SYNTAX:
             raise DNError (self.dn)
         except ldap.NO_SUCH_OBJECT:
@@ -84,7 +85,7 @@ class Node:
                 node.parent = self
                 self._children.append (node)
 
-            logging.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
+            logger.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
 
         return self._children
 

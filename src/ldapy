@@ -4,7 +4,14 @@ from commandline import Commandline
 from ldapy import Ldapy
 from commands import List, ChangeDN, PrintWorkingDN, Cat
 import connection
+import sys
 
+import logging
+logger = logging.getLogger ("ldapy")
+handler = logging.StreamHandler()
+handler.setFormatter (logging.Formatter("%(levelname)s:%(name)s: %(message)s"))
+logger.addHandler (handler)
+logger.setLevel (logging.DEBUG)
 
 # Test data
 uri = "ldap://localhost"

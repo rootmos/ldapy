@@ -1,7 +1,9 @@
 from node import Node
 import argparse
-import logging
 import ldapurl
+
+import logging
+logger = logging.getLogger("ldapy").getChild(__name__)
 
 class NoSuchDN (Exception):
     def __init__ (self, relDN, parent):

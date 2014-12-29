@@ -1,6 +1,8 @@
 import ldap
-import logging
 import sys
+
+import logging
+logger = logging.getLogger("ldapy").getChild (__name__)
 
 class ConnectionError (Exception):
     def __init__ (self, con, msg):
@@ -17,7 +19,7 @@ class Connection:
     _bad_auth_error_msg = "Unable to authenticate user = %s"
 
     def __init__ (self, uri, traces = 0):
-        logging.info ("Connecting to %s" % uri)
+        logger.info ("Connecting to %s" % uri)
         self.uri = uri
         self.ldap = ldap.initialize (uri, trace_level = traces, trace_file = sys.stdout)
         self.connected = False
@@ -42,7 +44,7 @@ class Connection:
             results = self.ldap.search_s ("", ldap.SCOPE_BASE, attrlist = ["namingContexts"])
             self._roots = results[0][1]["namingContexts"]
 
-            logging.debug ("Roots: %s" % self._roots)
+            logger.debug ("Roots: %s" % self._roots)
 
         return self._roots
 
