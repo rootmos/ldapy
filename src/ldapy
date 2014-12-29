@@ -19,14 +19,7 @@ admin = "cn=admin,dc=nodomain"
 admin_password = "foobar"
 
 if __name__ == "__main__":
-    con = connection.Connection (uri)
-    con.bind (admin, admin_password)
-
-    ldapy = Ldapy (con)
-    args = sys.argv
-    args.pop(0)
-    if not ldapy.parseArguments (args):
-        sys.exit (2)
+    ldapy = Ldapy ()
 
     commands = [List (ldapy), ChangeDN (ldapy), PrintWorkingDN (ldapy),\
                 Cat (ldapy)]

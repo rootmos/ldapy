@@ -1,6 +1,8 @@
 from node import Node
 import argparse
 import ldapurl
+import connection
+import sys
 
 import logging
 logger = logging.getLogger("ldapy").getChild(__name__)
@@ -27,8 +29,21 @@ class AlreadyAtRoot (Exception):
 
 
 class Ldapy:
-    def __init__ (self, connection):
-        self.connection = connection
+    def __init__ (self, con = None, args = None):
+        if con:
+            self.connection = con
+        else:
+            if args:
+                self.parseArguments (args)
+            else:
+                self.parseArguments ()
+            try:
+                self.connection = connection.Connection (self.args.URI)
+                self.connection.bind (self.args.bind_dn, self.args.password)
+            except connection.ConnectionError as e:
+                logger.critical (e)
+                sys.exit (1)
+
         self._cwd = Node (self.connection, "")
 
     @property
@@ -75,16 +90,16 @@ class Ldapy:
     _uri_malformed = "Invalid URI format given."
     _port_is_not_a_valid_number = "Port is not a valid number."
 
-    def parseArguments (self, args, name="ldapy"):
+    def parseArguments (self, args = None, name = "ldapy"):
         parser = argparse.ArgumentParser (prog=name)
 
         parser.add_argument ("--host", "-H",
                              help="Specifies host to connect to.")
         parser.add_argument ("--port", "-p", default=389, type=int,
                              help="Specifies which port to connect to on host.")
-        parser.add_argument ("--bind-dn", "-D",
+        parser.add_argument ("--bind-dn", "-D", default="",
                              help="Specifies DN used for binding.")
-        parser.add_argument ("--password", "-w",
+        parser.add_argument ("--password", "-w", default="",
                              help="Specifies password used for binding.")
         parser.add_argument ("URI", nargs="?",
                 help="Specifies URI to connect to, in the format: ldap://host[:port]")
@@ -111,6 +126,8 @@ class Ldapy:
             except ValueError:
                 parser.error (Ldapy._uri_malformed)
                 return False
+        else:
+            self.args.URI = "ldap://%s:%s" % (self.args.host, self.args.port)
 
         if self.args.port < 0 or self.args.port > 0xffff:
             parser.error (Ldapy._port_is_not_a_valid_number)
