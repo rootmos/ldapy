@@ -29,14 +29,12 @@ class AlreadyAtRoot (Exception):
 
 
 class Ldapy:
-    def __init__ (self, con = None, args = None):
+    def __init__ (self, con = None):
         if con:
             self.connection = con
         else:
-            if args:
-                self.parseArguments (args)
-            else:
-                self.parseArguments ()
+            self.parseArguments ()
+
             try:
                 self.connection = connection.Connection (self.args.URI)
                 self.connection.bind (self.args.bind_dn, self.args.password)
