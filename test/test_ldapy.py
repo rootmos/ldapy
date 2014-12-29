@@ -129,12 +129,14 @@ class ArgumentParserTests (unittest.TestCase):
         host = "localhost"
         port = 7
         bind_dn = "cn=admin"
-        args = ["-H", host, "-p", str(port), "-D", bind_dn]
+        password = "foobar"
+        args = ["-H", host, "-p", str(port), "-D", bind_dn, "-w", password]
 
         self.assertTrue (ldapy.parseArguments (args))
         self.assertEqual (ldapy.args.host, host)
         self.assertEqual (ldapy.args.port, port)
         self.assertEqual (ldapy.args.bind_dn, bind_dn)
+        self.assertEqual (ldapy.args.password, password)
 
     def test_successful_parse_with_uri (self):
         ldapy = Ldapy (self.con)
@@ -142,12 +144,14 @@ class ArgumentParserTests (unittest.TestCase):
         host = "localhost"
         port = 7
         bind_dn = "cn=admin"
-        args = ["ldap://%s:%s" % (host, port), "-D", bind_dn]
+        password = "foobar"
+        args = ["ldap://%s:%s" % (host, port), "-D", bind_dn, "-w", password]
 
         self.assertTrue (ldapy.parseArguments (args))
         self.assertEqual (ldapy.args.host, host)
         self.assertEqual (ldapy.args.port, port)
         self.assertEqual (ldapy.args.bind_dn, bind_dn)
+        self.assertEqual (ldapy.args.password, password)
 
 
     def test_neither_host_nor_uri_is_specified (self):
