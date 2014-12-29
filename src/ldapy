@@ -23,6 +23,10 @@ if __name__ == "__main__":
     con.bind (admin, admin_password)
 
     ldapy = Ldapy (con)
+    args = sys.argv
+    args.pop(0)
+    if not ldapy.parseArguments (args):
+        sys.exit (2)
 
     commands = [List (ldapy), ChangeDN (ldapy), PrintWorkingDN (ldapy),\
                 Cat (ldapy)]

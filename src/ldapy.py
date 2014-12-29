@@ -73,35 +73,46 @@ class Ldapy:
     _neither_host_nor_uri_given = "Must specify either a host (--host) or an URI."
     _both_host_and_uri_given_and_unequal = "Ambiguous host and URI specified."
     _uri_malformed = "Invalid URI format given."
+    _port_is_not_a_valid_number = "Port is not a valid number."
 
-    def parseArguments (self, args):
-        parser = argparse.ArgumentParser ()
+    def parseArguments (self, args, name="ldapy"):
+        parser = argparse.ArgumentParser (prog=name)
 
         parser.add_argument ("--host", "-H",
                              help="Specifies host to connect to.")
-        parser.add_argument ("--port", "-p",
+        parser.add_argument ("--port", "-p", default=389, type=int,
                              help="Specifies which port to connect to on host.")
-        parser.add_argument ("URI", nargs="*", default=None,
-                help="Specifies URI to connect to, in the format: ldap://host[:port]")
         parser.add_argument ("--bind-dn", "-D",
                              help="Specifies DN used for binding.")
         parser.add_argument ("--password", "-w",
                              help="Specifies password used for binding.")
+        parser.add_argument ("URI", nargs="?",
+                help="Specifies URI to connect to, in the format: ldap://host[:port]")
 
         self.args = parser.parse_args (args)
-        return self.validateArguments ()
+        return self.validateArguments (parser)
 
-    def validateArguments (self):
+    def validateArguments (self, parser):
         if not self.args.host and not self.args.URI:
-            logging.error (Ldapy._neither_host_nor_uri_given)
+            parser.error (Ldapy._neither_host_nor_uri_given)
             return False
 
-        if self.args.URI and len(self.args.URI) == 1:
+        if self.args.URI:
             try:
-                uri = ldapurl.LDAPUrl (self.args.URI[0])
+                uri = ldapurl.LDAPUrl (self.args.URI)
+                hostport = uri.hostport.split (":")
+                self.args.host = hostport[0]
+                if len(hostport) == 2:
+                    self.args.port = int(hostport[1])
             except ValueError:
-                logging.error (Ldapy._uri_malformed)
+                parser.error (Ldapy._uri_malformed)
                 return False
+
+        if self.args.port < 0 or self.args.port > 0xffff:
+            parser.error (Ldapy._port_is_not_a_valid_number)
+            return False
+
+        logger.debug ("Arguments: %s" % vars(self.args))
 
         return True
 

@@ -126,7 +126,7 @@ class ArgumentParserTests (unittest.TestCase):
     def test_neither_host_nor_uri_is_specified (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('logging.error') as error_mock:
+        with mock.patch('argparse.ArgumentParser.error') as error_mock:
             ldapy.parseArguments ([])
 
         error_mock.assert_called_with (Ldapy._neither_host_nor_uri_given)
@@ -134,8 +134,21 @@ class ArgumentParserTests (unittest.TestCase):
     def test_malformed_uri (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('logging.error') as error_mock:
+        with mock.patch('argparse.ArgumentParser.error') as error_mock:
             ldapy.parseArguments (["foobar://lars"])
 
         error_mock.assert_called_with (Ldapy._uri_malformed)
 
+    def test_port_invalid_number (self):
+        ldapy = Ldapy (self.con)
+
+        with mock.patch('argparse.ArgumentParser.error') as error_mock:
+            ldapy.parseArguments (["-H", "foo", "-p", "-1"])
+
+        error_mock.assert_called_with (Ldapy._port_is_not_a_valid_number)
+        error_mock.reset_mock ()
+
+        with mock.patch('argparse.ArgumentParser.error') as error_mock:
+            ldapy.parseArguments (["-H", "foo", "-p", str(0xffff + 1)])
+
+        error_mock.assert_called_with (Ldapy._port_is_not_a_valid_number)
