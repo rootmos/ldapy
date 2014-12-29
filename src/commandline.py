@@ -65,14 +65,15 @@ class Commandline:
     def loop (self):
         try:
             while True:
-                line = raw_input (self.prompt)
                 try:
+                    line = raw_input (self.prompt)
                     self.parse_and_dispatch (line)
                 except NoSuchCommand as e:
                     print e
-        except KeyboardInterrupt:
-            sys.stdout.write ("\n")
-            return
+                except KeyboardInterrupt:
+                    sys.stdout.write ("\n")
+                    if not readline.get_line_buffer():
+                        return
         except EOFError:
             return
         except ExitCommandline:

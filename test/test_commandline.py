@@ -127,6 +127,18 @@ class BasicFunctionality (unittest.TestCase):
         with mock.patch('__builtin__.raw_input', side_effect=KeyboardInterrupt):
             cli.loop ()
 
+    def test_ctrl_c_clears_cmdline_if_it_has_input (self):
+        child = create_sut_process (TrivialCommandline, TrivialCommandline.sut_trivial_commandline)
+
+        child.expect ("\$")
+        child.send("foobar")
+        child.sendintr ()
+        child.expect ("\$")
+        child.sendline ("exit")
+        child.wait ()
+
+        assert child.exitstatus == 0
+
     def test_no_such_command (self):
         cli = Commandline ([])
 
@@ -152,6 +164,12 @@ def create_sut_process (cls, method):
     print "Running:", cmdline
     return pexpect.spawn (" ".join (args), env = {"PYTHONPATH" : ":".join(sys.path)})
 
+class TrivialCommandline:
+    @staticmethod
+    def sut_trivial_commandline (args):
+        cli = Commandline ([])
+        cli.loop ()
+
 class Completer (unittest.TestCase):
 
     def test_completer_called (self):
@@ -165,7 +183,7 @@ class Completer (unittest.TestCase):
         assert child.exitstatus == 0
 
     def test_unique_completion (self):
-        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+        child = create_sut_process (TrivialCommandline, TrivialCommandline.sut_trivial_commandline)
 
         child.expect ("\$")
         child.send("qui\t\n")
@@ -174,7 +192,7 @@ class Completer (unittest.TestCase):
         assert child.exitstatus == 0
 
     def test_survives_completion_after_bogus_command (self):
-        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+        child = create_sut_process (TrivialCommandline, TrivialCommandline.sut_trivial_commandline)
 
         child.expect ("\$")
         child.send("foobar \t\n")
@@ -225,7 +243,7 @@ class Completer (unittest.TestCase):
         assert not cmd2.__call__.called
 
     def test_list_all_when_no_text (self):
-        child = create_sut_process (Completer, Completer.sut_trivial_commandline)
+        child = create_sut_process (TrivialCommandline, TrivialCommandline.sut_trivial_commandline)
 
         child.expect ("\$")
         child.send("\t\t")
