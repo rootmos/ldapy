@@ -131,6 +131,14 @@ class ArgumentParserTests (unittest.TestCase):
 
         error_mock.assert_called_with (Ldapy._neither_host_nor_uri_given)
 
+    def test_both_host_and_uri_is_specified (self):
+        ldapy = Ldapy (self.con)
+
+        with mock.patch('argparse.ArgumentParser.error') as error_mock:
+            ldapy.parseArguments (["-H", "foo", "ldap://bar"])
+
+        error_mock.assert_called_with (Ldapy._both_host_and_uri_given)
+
     def test_malformed_uri (self):
         ldapy = Ldapy (self.con)
 

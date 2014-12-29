@@ -71,7 +71,7 @@ class Ldapy:
 
 
     _neither_host_nor_uri_given = "Must specify either a host (--host) or an URI."
-    _both_host_and_uri_given_and_unequal = "Ambiguous host and URI specified."
+    _both_host_and_uri_given = "Both host and URI specified, only one allowed."
     _uri_malformed = "Invalid URI format given."
     _port_is_not_a_valid_number = "Port is not a valid number."
 
@@ -95,6 +95,10 @@ class Ldapy:
     def validateArguments (self, parser):
         if not self.args.host and not self.args.URI:
             parser.error (Ldapy._neither_host_nor_uri_given)
+            return False
+
+        if self.args.host and self.args.URI:
+            parser.error (Ldapy._both_host_and_uri_given)
             return False
 
         if self.args.URI:
