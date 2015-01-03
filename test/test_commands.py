@@ -144,6 +144,14 @@ class ListTests (unittest.TestCase):
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
+    def test_syntax_error_calls_usage (self):
+        cmd = List (self.ldapy)
+        cmd.usage = mock.MagicMock ()
+
+        # Test calling with too many parameters
+        cmd (["a"])
+        self.assertTrue(cmd.usage.called)
+
 class PrintWorkingDNTests (unittest.TestCase):
 
     def setUp (self):

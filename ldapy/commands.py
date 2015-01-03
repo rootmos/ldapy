@@ -22,7 +22,13 @@ class List (Command):
         Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
+    _wrong_number_of_arguments = "%s must be called without arguments"
     def __call__ (self, args):
+        # Check syntax
+        if len(args) != 0:
+            self.syntaxError (List._wrong_number_of_arguments % self.name)
+            return
+
         print "\t".join (self.ldapy.children)
 
     _usage = """Usage: %s
@@ -30,6 +36,7 @@ Lists children of current DN (currently: %s)."""
 
     def usage (self, words):
         print List._usage % (self.name, self.ldapy.cwd)
+
 
 class ChangeDN (Command):
     def __init__ (self, ldapy):
