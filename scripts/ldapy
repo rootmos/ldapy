@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
-from commandline import Commandline
-from ldapy import Ldapy
-from commands import List, ChangeDN, PrintWorkingDN, Cat
-import connection
+from ldapy.commandline import Commandline
+from ldapy.ldapy import Ldapy
+from ldapy.commands import List, ChangeDN, PrintWorkingDN, Cat
 import sys
 
 import logging

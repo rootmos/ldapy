@@ -1,8 +1,8 @@
 import configuration
-from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
+from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 import unittest
 import mock
-from commands import ChangeDN, List, PrintWorkingDN, Cat
+from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat
 
 def getLdapy ():
     con = configuration.getConnection ()

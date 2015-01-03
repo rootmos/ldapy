@@ -3,14 +3,15 @@
 import unittest
 import pexpect
 import os
-from connection import Connection
+import sys
+from ldapy.connection import Connection
 
 def create_ldapy_process (args):
     pwd = os.path.dirname (__file__)
-    script = os.path.join (pwd, "../src/ldapy")
+    script = os.path.join (pwd, "../scripts/ldapy")
     coverage = ["coverage", "run", "-p", "--source", os.environ["NOSE_COVER_PACKAGE"], script]
 
-    return pexpect.spawn (" ".join (coverage + args))
+    return pexpect.spawn (" ".join (coverage + args), env = {"PYTHONPATH" : ":".join(sys.path)})
 
 uri = "ldap://localhost"
 host = "localhost"

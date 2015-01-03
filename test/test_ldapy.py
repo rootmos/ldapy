@@ -2,7 +2,7 @@ import unittest
 import mock
 import configuration
 
-from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
+from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 
 
 class BasicLdapyTests (unittest.TestCase):

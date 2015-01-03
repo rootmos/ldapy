@@ -1,4 +1,4 @@
-from node import Node, NodeError, DNError
+from ldapy.node import Node, NodeError, DNError
 import unittest
 import configuration
 

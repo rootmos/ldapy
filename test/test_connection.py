@@ -1,4 +1,4 @@
-from connection import Connection, ConnectionError
+from ldapy.connection import Connection, ConnectionError
 import unittest
 import ldap
 import ldap.ldapobject

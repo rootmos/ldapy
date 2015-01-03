@@ -6,7 +6,7 @@ import pexpect
 import os
 import sys
 import syslog
-from commandline import Commandline, Command, NoSuchCommand, ExitCommand
+from ldapy.commandline import Commandline, Command, NoSuchCommand, ExitCommand
 
 class Parser (unittest.TestCase):
 
@@ -205,7 +205,7 @@ class Completer (unittest.TestCase):
 
     @staticmethod
     def sut_completer_called (args):
-        with mock.patch ("commandline.Commandline.complete") as completer:
+        with mock.patch ("ldapy.commandline.Commandline.complete") as completer:
             cli = Commandline ([])
             cli.loop ()
 
