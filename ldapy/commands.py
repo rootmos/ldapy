@@ -98,7 +98,13 @@ class Cat (Command):
         Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
+    _wrong_number_of_arguments = "%s must be called with exactly one argument"
     def __call__ (self, args):
+        # Check syntax
+        if len(args) != 1:
+            self.syntaxError (Cat._wrong_number_of_arguments % self.name)
+            return
+
         try:
             attributes = self.ldapy.getAttributes (args[0])
             for attribute, value_list in attributes.items():

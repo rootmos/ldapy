@@ -267,3 +267,17 @@ class CatTests (unittest.TestCase):
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
+    def test_syntax_error_calls_usage (self):
+        ldapy = getLdapy ()
+        cmd = Cat (ldapy)
+        cmd.usage = mock.MagicMock ()
+
+        # Test calling with no parameters
+        cmd ([])
+        self.assertTrue(cmd.usage.called)
+        cmd.usage.reset_mock ()
+
+        # Test calling with too many parameters
+        cmd (["a", "b"])
+        self.assertTrue(cmd.usage.called)
+
