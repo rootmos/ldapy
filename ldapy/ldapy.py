@@ -160,7 +160,7 @@ class Ldapy:
     def setLoggingLevels (self):
         # Obtain the global ldapy logger
         logger = logging.getLogger("ldapy")
-        
+
         if self.args.debug:
             logger.setLevel (logging.DEBUG)
         elif self.args.verbose:

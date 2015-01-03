@@ -64,4 +64,17 @@ class FailedConnectionErrors (unittest.TestCase):
         ldapy.wait ()
         assert ldapy.exitstatus == 1
 
+class LoggingLevels (unittest.TestCase):
+    def test_no_logging_when_not_asked (self):
+        ldapy = create_ldapy_process ([uri])
+        with self.assertRaises (pexpect.TIMEOUT):
+            ldapy.expect (["INFO", "DEBUG"], timeout=1)
+
+    def test_verbose_info (self):
+        ldapy = create_ldapy_process (["-v", uri])
+        ldapy.expect ("INFO")
+
+    def test_debug_info (self):
+        ldapy = create_ldapy_process (["-d", uri])
+        ldapy.expect ("DEBUG")
 
