@@ -37,7 +37,14 @@ class ChangeDN (Command):
         Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
+    _wrong_number_of_arguments = "%s must be called with exactly one argument"
+
     def __call__ (self, args):
+        # Check syntax
+        if len(args) != 1:
+            self.syntaxError (ChangeDN._wrong_number_of_arguments % self.name)
+            return
+
         try:
             self.ldapy.changeDN (args[0])
         except AlreadyAtRoot as e:
