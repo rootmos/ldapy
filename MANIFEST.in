@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+include requirements.txt
+include scripts/ldapy
+exclude test/*
