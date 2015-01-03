@@ -77,7 +77,13 @@ class PrintWorkingDN (Command):
         Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
+    _wrong_number_of_arguments = "%s must be called without arguments"
     def __call__ (self, args):
+        # Check syntax
+        if len(args) != 0:
+            self.syntaxError (PrintWorkingDN._wrong_number_of_arguments % self.name)
+            return
+
         print self.ldapy.cwd
 
     _usage = """Usage: %s
