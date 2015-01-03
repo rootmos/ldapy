@@ -26,7 +26,7 @@ class List (Command):
     def __call__ (self, args):
         # Check syntax
         if len(args) != 0:
-            self.syntaxError (List._wrong_number_of_arguments % self.name)
+            self.syntaxError (List._wrong_number_of_arguments % self.name, args)
             return
 
         print "\t".join (self.ldapy.children)
@@ -49,7 +49,7 @@ class ChangeDN (Command):
     def __call__ (self, args):
         # Check syntax
         if len(args) != 1:
-            self.syntaxError (ChangeDN._wrong_number_of_arguments % self.name)
+            self.syntaxError (ChangeDN._wrong_number_of_arguments % self.name, args)
             return
 
         try:
@@ -81,7 +81,7 @@ class PrintWorkingDN (Command):
     def __call__ (self, args):
         # Check syntax
         if len(args) != 0:
-            self.syntaxError (PrintWorkingDN._wrong_number_of_arguments % self.name)
+            self.syntaxError (PrintWorkingDN._wrong_number_of_arguments % self.name, args)
             return
 
         print self.ldapy.cwd
@@ -102,7 +102,7 @@ class Cat (Command):
     def __call__ (self, args):
         # Check syntax
         if len(args) != 1:
-            self.syntaxError (Cat._wrong_number_of_arguments % self.name)
+            self.syntaxError (Cat._wrong_number_of_arguments % self.name, args)
             return
 
         try:

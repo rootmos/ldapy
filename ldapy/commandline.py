@@ -24,9 +24,9 @@ class Command:
 
     _syntax_error = "Syntax error!"
 
-    def syntaxError (self, reason):
-        print Command.syntaxError, reason
-        self.usage ()
+    def syntaxError (self, reason, args):
+        print Command._syntax_error, reason
+        self.usage (args)
 
     def __call__ (self, args):
         pass
