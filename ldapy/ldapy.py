@@ -116,8 +116,15 @@ class Ldapy:
                              help="Specifies password used for binding.")
         parser.add_argument ("URI", nargs="?",
                 help="Specifies URI to connect to, in the format: ldap://host[:port]")
-
+        parser.add_argument ("--verbose", "-v", default=False, action="store_true",
+                help="Output more information about what's happening behind the scenes.")
+        parser.add_argument ("--debug", "-d", default=False, action="store_true",
+                help="Output all available gruesome debug information.")
         self.args = parser.parse_args (args)
+
+        # Take this opportunity to set the logging levels as early as possible
+        self.setLoggingLevels ()
+
         return self.validateArguments (parser)
 
     def validateArguments (self, parser):
@@ -150,3 +157,11 @@ class Ldapy:
 
         return True
 
+    def setLoggingLevels (self):
+        # Obtain the global ldapy logger
+        logger = logging.getLogger("ldapy")
+        
+        if self.args.debug:
+            logger.setLevel (logging.DEBUG)
+        elif self.args.verbose:
+            logger.setLevel (logging.INFO)
