@@ -46,10 +46,14 @@ class Node:
     def __init__ (self, con, dn, attributes = None):
         logger.info ("Creating Node with DN=[%s]" % dn)
         self.con = con
-        self.dn = ldap.dn.dn2str(ldap.dn.str2dn(dn))
         self.parent = None
         self._children = None
         self._relativeChildren = None
+
+        try:
+            self.dn = ldap.dn.dn2str(ldap.dn.str2dn(dn))
+        except ldap.DECODING_ERROR:
+            raise DNError (self.dn)
 
         # If we were'n given a dn, then we populate the Node with the roots
         if not self.dn:
@@ -82,8 +86,6 @@ class Node:
             node = nodes[0]
             self.attributes = node[1]
             logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
-        except ldap.INVALID_DN_SYNTAX:
-            raise DNError (self.dn)
         except ldap.NO_SUCH_OBJECT:
             raise NodeError (self, Node._dn_does_not_exist % self.dn)
         except ldap.OTHER:
