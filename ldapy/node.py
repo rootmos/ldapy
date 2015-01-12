@@ -18,7 +18,7 @@ import ldap
 import ldap.dn
 
 import logging
-logger = logging.getLogger("ldapy").getChild(__name__)
+logger = logging.getLogger("ldapy.%s" % __name__)
 
 class DNError (Exception):
     def __init__ (self, dn):
@@ -80,7 +80,6 @@ class Node:
         try:
             nodes = self.con.ldap.search_s (self.dn, ldap.SCOPE_BASE)
             node = nodes[0]
-            self.dn = node[0]
             self.attributes = node[1]
             logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
         except ldap.INVALID_DN_SYNTAX:

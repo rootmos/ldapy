@@ -17,7 +17,7 @@ import ldap
 import sys
 
 import logging
-logger = logging.getLogger("ldapy").getChild (__name__)
+logger = logging.getLogger("ldapy.%s" %  __name__)
 
 class ConnectionError (Exception):
     def __init__ (self, con, msg, info = None):

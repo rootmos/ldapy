@@ -20,7 +20,7 @@ import connection
 import sys
 
 import logging
-logger = logging.getLogger("ldapy").getChild(__name__)
+logger = logging.getLogger("ldapy.%s" % __name__)
 
 class NoSuchDN (Exception):
     def __init__ (self, relDN, parent):
