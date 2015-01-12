@@ -46,7 +46,7 @@ class Node:
     def __init__ (self, con, dn, attributes = None):
         logger.info ("Creating Node with DN=[%s]" % dn)
         self.con = con
-        self.dn = dn
+        self.dn = ldap.dn.dn2str(ldap.dn.str2dn(dn))
         self.parent = None
         self._children = None
         self._relativeChildren = None
