@@ -1,7 +1,8 @@
 import provisioning
 from ldapy.connection import Connection
 
-uri = "ldap://localhost"
+host = "localhost"
+uri = "ldap://%s" % host
 admin = "cn=admin,dc=nodomain"
 admin_password = "foobar"
 

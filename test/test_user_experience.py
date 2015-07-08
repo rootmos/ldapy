@@ -5,6 +5,7 @@ import pexpect
 import os
 import sys
 from ldapy.connection import Connection
+import configuration
 
 def create_ldapy_process (args):
     pwd = os.path.dirname (__file__)
@@ -13,11 +14,10 @@ def create_ldapy_process (args):
 
     return pexpect.spawn (" ".join (coverage + args), env = {"PYTHONPATH" : ":".join(sys.path)})
 
-uri = "ldap://localhost"
-host = "localhost"
-bind_dn = "cn=admin,dc=nodomain"
-root = "dc=nodomain"
-password = "foobar"
+uri = configuration.uri
+host = configuration.host
+bind_dn = configuration.admin
+password = configuration.admin_password
 
 class BasicConnectivity (unittest.TestCase):
 
@@ -31,18 +31,19 @@ class BasicConnectivity (unittest.TestCase):
         self.execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, "-H", host])
 
     def execute_with_args_ls_and_expect_root (self, args):
-        ldapy = create_ldapy_process (args)
+        with configuration.provision() as p:
+            ldapy = create_ldapy_process (args)
 
-        ldapy.expect ("\$")
-        ldapy.sendline ("ls")
-        ldapy.expect (root)
+            ldapy.expect ("\$")
+            ldapy.sendline ("ls")
+            ldapy.expect (p.root)
 
-        ldapy.expect ("\$")
-        ldapy.sendline ("quit")
+            ldapy.expect ("\$")
+            ldapy.sendline ("quit")
 
-        ldapy.wait ()
+            ldapy.wait ()
 
-        assert ldapy.exitstatus == 0
+            assert ldapy.exitstatus == 0
 
 class FailedConnectionErrors (unittest.TestCase):
     def test_unknow_host (self):
