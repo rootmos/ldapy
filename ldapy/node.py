@@ -53,7 +53,7 @@ class Node:
         try:
             self.dn = ldap.dn.dn2str(ldap.dn.str2dn(dn))
         except ldap.DECODING_ERROR:
-            raise DNError (self.dn)
+            raise DNError (dn)
 
         # If we were'n given a dn, then we populate the Node with the roots
         if not self.dn:
