@@ -25,8 +25,8 @@ class Utilities (unittest.TestCase):
         assert self.con.connected
 
     def test_find_roots (self):
-        root = "dc=nodomain"
-        self.assertIn (root, self.con.roots)
+        with configuration.provision() as p:
+            self.assertIn (p.root, self.con.roots)
 
 class ConnectionErrors (unittest.TestCase):
 
@@ -41,7 +41,7 @@ class ConnectionErrors (unittest.TestCase):
         self.assertEqual (str(received.exception), str(expected))
 
     def test_bind_auth_error (self):
-        bad_user ="cn=badguy,dc=nodomain"
+        bad_user ="cn=badguy,dc=lair"
         bad_password ="urg"
         con = Connection (configuration.uri)
         with self.assertRaises(ConnectionError) as received:
