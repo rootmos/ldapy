@@ -1,3 +1,4 @@
+import provisioning
 from ldapy.connection import Connection
 
 uri = "ldap://localhost"
@@ -8,4 +9,7 @@ def getConnection (traces = 0):
     con = Connection (uri, traces)
     con.bind (admin, admin_password)
     return con
+
+def provision ():
+    return provisioning.provision(uri, admin, admin_password)
 

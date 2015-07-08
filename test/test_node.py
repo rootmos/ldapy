@@ -1,65 +1,80 @@
 from ldapy.node import Node, NodeError, DNError
 import unittest
 import configuration
+import provisioning
 
 class BasicNodeTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
     def test_successful_creation (self):
-        dn_long = "ou=People, dc=nodomain"
-        dn_shortened = "ou=People,dc=nodomain"
-        node = Node (self.con, dn_long)
+        with configuration.provision() as p:
+            l = p.leaf()
+            longDN = l.dn.replace(",", ", ")
 
-        self.assertEqual (node.dn, dn_shortened)
-        self.assertIsNotNone (node.attributes)
+            node = Node (self.con, longDN)
+
+            self.assertEqual (node.dn, l.dn)
+            self.assertIsNotNone (node.attributes)
 
     def test_attributes (self):
-        dn = "ou=People,dc=nodomain"
-        node = Node (self.con, dn)
-
-        self.assertEqual (node.attributes["objectClass"][0], "organizationalUnit")
+        with configuration.provision() as p:
+            l = p.leaf(attr={"description":"test_attributes"})
+            node = Node (self.con, l.dn)
+            self.assertEqual (node.attributes["description"][0], "test_attributes")
 
     def test_children (self):
-        dn ="ou=People,dc=nodomain"
-        parent = Node (self.con, dn)
+        with configuration.provision() as p:
+            c = p.container()
+            l = p.leaf(c, attr={"description":"test_children"})
 
-        children = parent.children
-        self.assertEqual (len(children), 1)
+            parent = Node (self.con, c.dn)
 
-        child = children[0]
-        self.assertEqual (child.dn, "uid=john,ou=People,dc=nodomain")
-        self.assertEqual (child.parent, parent)
-        self.assertIn("posixAccount", child.attributes["objectClass"])
+            children = parent.children
+            self.assertEqual (len(children), 1)
+
+            child = children[0]
+            self.assertEqual (child.dn, l.dn)
+            self.assertEqual (child.parent, parent)
+            self.assertEqual (child.attributes["description"][0], "test_children")
 
     def test_relative_parent (self):
-        dn ="ou=People,dc=nodomain"
-        parent = Node (self.con, dn)
+        with configuration.provision() as p:
+            c = p.container()
+            l = p.leaf(c)
+            
+            parent = Node (self.con, c.dn)
 
-        child = parent.children[0]
-
-        assert child.relativeDN () == "uid=john"
+            child = parent.children[0]
+            assert child.relativeDN () == l.rdn
 
     def test_relative_superparent (self):
-        dn = "uid=john,ou=People,dc=nodomain"
-        leaf = Node (self.con, dn)
+        with configuration.provision() as p:
+            c = p.container()
+            l = p.leaf(c)
 
-        assert leaf.relativeDN ("dc=nodomain") == "uid=john,ou=People"
+            leaf = Node (self.con, l.dn)
+            rdn = l.rdn + "," + c.rdn
+            self.assertEqual(leaf.relativeDN (c.parent), rdn)
 
     def test_relative_out_of_tree (self):
-        dn = "uid=john,ou=People,dc=nodomain"
-        leaf = Node (self.con, dn)
-
-        assert leaf.relativeDN ("dc=out_of_tree") == str (leaf)
+        with configuration.provision() as p:
+            l = p.leaf()
+            leaf = Node (self.con, l.dn)
+            assert leaf.relativeDN ("dc=out_of_tree") == str (leaf)
 
     def test_relative_children (self):
-        dn = "dc=nodomain"
-        node = Node (self.con, dn)
+        with configuration.provision() as p:
+            c = p.container()
+            l1 = p.leaf(c)
+            l2 = p.leaf(c)
+            
+            node = Node (self.con, c.dn)
 
-        expect = ["ou=People", "ou=Groups"]
-        relative = node.relativeChildren.keys ()
-        for e in expect:
-            self.assertIn (e, relative)
+            expect = [l1.rdn, l2.rdn]
+            relative = node.relativeChildren.keys ()
+            for e in expect:
+                self.assertIn (e, relative)
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):

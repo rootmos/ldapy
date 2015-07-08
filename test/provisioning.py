@@ -29,9 +29,9 @@ class Container(LdapObject):
         else:
             self.name = "Container%s" % salt()
 
-        print self.name
-
-        self.dn = "%s=%s,%s" % (dnComponent, self.name, parent)
+        self.parent = parent
+        self.rdn = "%s=%s" % (dnComponent, self.name)
+        self.dn = "%s,%s" % (self.rdn, parent)
 
         if attr:
             self.attr = attr
@@ -56,7 +56,9 @@ class Leaf(LdapObject):
         else:
             self.name = "Leaf%s" % salt()
 
-        self.dn = "%s=%s,%s" % (dnComponent, self.name, parent)
+        self.parent = parent
+        self.rdn = "%s=%s" % (dnComponent, self.name)
+        self.dn = "%s,%s" % (self.rdn, parent)
 
         if attr:
             self.attr = attr
@@ -75,11 +77,9 @@ class Provisioning:
         ldif = ldap.modlist.addModlist(obj.attr)
         self.ldap.add_s(obj.dn, ldif)
         self.provisionedDNs.appendleft(obj)
-        print "Add: %s" % obj
     
     def delete(self, obj):
         self.ldap.delete_s(obj.dn)
-        print "Delete: %s" % obj
 
     def container(self, parent = None, name = None, attr = None):
         if not parent:
