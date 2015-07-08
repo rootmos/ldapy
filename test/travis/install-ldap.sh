@@ -1,5 +1,6 @@
 #!/bin/sh -x
 
+sudo apt-get update
 sudo apt-get purge slapd ldap-utils
 sudo DEBIAN_FRONTEND=noninteractive apt-get install slapd ldap-utils
 
