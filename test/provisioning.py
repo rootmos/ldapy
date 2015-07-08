@@ -29,6 +29,7 @@ class Container(LdapObject):
         else:
             self.name = "Container%s" % salt()
 
+        self.dnComponent = dnComponent
         self.parent = parent
         self.rdn = "%s=%s" % (dnComponent, self.name)
         self.dn = "%s,%s" % (self.rdn, parent)
@@ -56,6 +57,7 @@ class Leaf(LdapObject):
         else:
             self.name = "Leaf%s" % salt()
 
+        self.dnComponent = dnComponent
         self.parent = parent
         self.rdn = "%s=%s" % (dnComponent, self.name)
         self.dn = "%s,%s" % (self.rdn, parent)

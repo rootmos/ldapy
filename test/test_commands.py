@@ -11,23 +11,25 @@ def getLdapy ():
 class ChangeDNTests (unittest.TestCase):
 
     def test_successful_cd (self):
-        ldapy = getLdapy ()
-        cmd = ChangeDN (ldapy)
-        root = "dc=nodomain"
-        cmd ([root])
-        self.assertEqual (ldapy.cwd, root)
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            cmd = ChangeDN (ldapy)
+            root = p.root
+            cmd ([root])
+            self.assertEqual (ldapy.cwd, root)
 
     def test_successful_cd_to_parent (self):
-        ldapy = getLdapy ()
-        root = "dc=nodomain"
-        child = "ou=People"
-        ldapy.changeDN (root)
-        ldapy.changeDN (child)
+        with configuration.provision() as p:
+            c = p.container()
 
-        cmd = ChangeDN (ldapy)
-        cmd ([".."])
+            ldapy = getLdapy ()
+            ldapy.changeDN (p.root)
+            ldapy.changeDN (c.rdn)
 
-        self.assertEqual (ldapy.cwd, root)
+            cmd = ChangeDN (ldapy)
+            cmd ([".."])
+
+            self.assertEqual (ldapy.cwd, c.parent)
 
 
     def test_unsuccessful_cd_to_root (self):
@@ -44,20 +46,20 @@ class ChangeDNTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_unsuccessful_cd_to_child (self):
-        ldapy = getLdapy ()
-        root = "dc=nodomain"
-        ldapy.changeDN (root)
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            ldapy.changeDN (p.root)
 
-        cmd = ChangeDN (ldapy)
+            cmd = ChangeDN (ldapy)
 
-        nonexistent = "ou=Foobar"
+            nonexistent = "ou=Foobar"
 
-        with mock.patch('sys.stdout.write') as print_mock:
-            cmd ([nonexistent])
+            with mock.patch('sys.stdout.write') as print_mock:
+                cmd ([nonexistent])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, root)
-        expect_calls = [mock.call(msg), mock.call("\n")]
-        self.assertListEqual (print_mock.call_args_list, expect_calls)
+            msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, p.root)
+            expect_calls = [mock.call(msg), mock.call("\n")]
+            self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_unsuccessful_cd_one_level_too_far (self):
         ldapy = getLdapy ()
@@ -72,24 +74,30 @@ class ChangeDNTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_cd_completer (self):
-        ldapy = getLdapy ()
-        cmd = ChangeDN (ldapy)
-        root = "dc=nodomain"
+        with configuration.provision() as p:
+            container = p.container()
+            a = p.container(container)
+            b = p.container(container)
+            c = p.leaf(container)
 
-        # Test return all on empty list
-        matches = cmd.complete ([])
-        self.assertListEqual ([root], matches)
+            ldapy = getLdapy ()
+            ldapy.changeDN (p.root)
+            ldapy.changeDN (container.rdn)
 
-        # Test several matches 
-        ldapy.changeDN (root)
-        children = ["ou=Groups","ou=People"]
-        matches = cmd.complete (["ou="])
-        self.assertItemsEqual (children, matches)
+            cmd = ChangeDN (ldapy)
 
-        # Test unique match
-        matches = cmd.complete (["ou=P"])
-        child = ["ou=People"]
-        self.assertListEqual (child, matches)
+            # Test return all on empty list
+            matches = cmd.complete ([])
+            self.assertListEqual (sorted([a.rdn, b.rdn, c.rdn]), sorted(matches))
+
+            # Test several matches 
+            matches = cmd.complete (["%s=" % a.dnComponent])
+            self.assertItemsEqual (sorted([a.rdn, b.rdn]), sorted(matches))
+
+            # Test unique match
+            unique = b.rdn[:-1]
+            matches = cmd.complete ([unique])
+            self.assertListEqual ([b.rdn], matches)
 
     def test_usage (self):
         ldapy = getLdapy ()
@@ -117,35 +125,45 @@ class ChangeDNTests (unittest.TestCase):
 
 class ListTests (unittest.TestCase):
 
-    def setUp (self):
-        self.ldapy = getLdapy ()
-        self.ldapy.changeDN ("dc=nodomain")
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            ldapy.changeDN (p.root)
+            return ldapy
 
     def test_successful_list (self):
-        cmd = List (self.ldapy)
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            c = p.container()
+            ldapy.changeDN(c.rdn)
 
-        with mock.patch('sys.stdout.write') as print_mock:
-            cmd ([])
+            l1 = p.leaf(c)
+            l2 = p.leaf(c)
 
-        first_call = print_mock.call_args_list[0]
-        args = first_call[0]
-        first_arg = args[0]
-        result = first_arg.split("\t")
+            cmd = List (ldapy)
 
-        self.assertIn ("ou=Groups", result)
-        self.assertIn ("ou=People", result)
+            with mock.patch('sys.stdout.write') as print_mock:
+                cmd ([])
+
+            first_call = print_mock.call_args_list[0]
+            args = first_call[0]
+            first_arg = args[0]
+            result = first_arg.split("\t")
+
+            self.assertListEqual (sorted([l1.rdn, l2.rdn]), sorted(result))
 
     def test_usage (self):
-        cmd = List (self.ldapy)
+        ldapy = self.getLdapyAtRoot()
+        cmd = List (ldapy)
         with mock.patch('sys.stdout.write') as print_mock:
             cmd.usage ([])
 
-        msg = List._usage % ("ls", self.ldapy.cwd)
+        msg = List._usage % ("ls", ldapy.cwd)
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_syntax_error_calls_usage (self):
-        cmd = List (self.ldapy)
+        cmd = List (self.getLdapyAtRoot())
         cmd.usage = mock.MagicMock ()
 
         # Test calling with too many parameters
@@ -154,30 +172,41 @@ class ListTests (unittest.TestCase):
 
 class PrintWorkingDNTests (unittest.TestCase):
 
-    def setUp (self):
-        self.ldapy = getLdapy ()
-        self.ldapy.changeDN ("dc=nodomain")
-        self.ldapy.changeDN ("ou=People")
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            ldapy.changeDN (p.root)
+            return ldapy
 
     def test_successful_pwd (self):
-        cmd = PrintWorkingDN (self.ldapy)
-        with mock.patch('sys.stdout.write') as print_mock:
-            cmd ([])
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            c = p.container()
+            ldapy.changeDN(c.rdn)
 
-        expect_calls = [mock.call("ou=People,dc=nodomain"), mock.call("\n")]
-        self.assertListEqual (print_mock.call_args_list, expect_calls)
+            cmd = PrintWorkingDN (ldapy)
+            with mock.patch('sys.stdout.write') as print_mock:
+                cmd ([])
+
+            expect_calls = [mock.call(c.dn), mock.call("\n")]
+            self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_usage (self):
-        cmd = PrintWorkingDN (self.ldapy)
+        ldapy = self.getLdapyAtRoot()
+        cmd = PrintWorkingDN (ldapy)
         with mock.patch('sys.stdout.write') as print_mock:
             cmd.usage ([])
 
-        msg = PrintWorkingDN._usage % ("pwd", self.ldapy.cwd)
-        expect_calls = [mock.call(msg), mock.call("\n")]
-        self.assertListEqual (print_mock.call_args_list, expect_calls)
+        with configuration.provision() as p:
+            c = p.container()
+            ldapy.changeDN(c.rdn)
+
+            msg = PrintWorkingDN._usage % ("pwd", p.root)
+            expect_calls = [mock.call(msg), mock.call("\n")]
+            self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_syntax_error_calls_usage (self):
-        cmd = PrintWorkingDN (self.ldapy)
+        cmd = PrintWorkingDN (self.getLdapyAtRoot())
         cmd.usage = mock.MagicMock ()
 
         # Test calling with too many parameters
@@ -186,13 +215,15 @@ class PrintWorkingDNTests (unittest.TestCase):
 
 class CatTests (unittest.TestCase):
 
-    def setUp (self):
-        self.ldapy = getLdapy ()
-        self.root = "dc=nodomain"
-        self.ldapy.changeDN (self.root)
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            self.root = p.root
+            ldapy.changeDN (self.root)
+            return ldapy
 
     def test_cat_self (self):
-        cmd = Cat (self.ldapy)
+        cmd = Cat (self.getLdapyAtRoot())
         with mock.patch('sys.stdout.write') as print_mock:
             cmd (["."])
 
@@ -200,15 +231,19 @@ class CatTests (unittest.TestCase):
         self.assertIn (wanted_call, print_mock.call_args_list)
 
     def test_cat_child (self):
-        cmd = Cat (self.ldapy)
-        with mock.patch('sys.stdout.write') as print_mock:
-            cmd (["ou=People"])
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            l = p.leaf()
 
-        wanted_call = mock.call ("objectClass: organizationalUnit")
-        self.assertIn (wanted_call, print_mock.call_args_list)
+            cmd = Cat (ldapy)
+            with mock.patch('sys.stdout.write') as print_mock:
+                cmd ([l.rdn])
+
+            wanted_call = mock.call ("%s: %s" % (l.dnComponent, l.name))
+            self.assertIn (wanted_call, print_mock.call_args_list)
 
     def test_cat_superroot (self):
-        cmd = Cat (self.ldapy)
+        cmd = Cat (self.getLdapyAtRoot())
 
         with mock.patch('sys.stdout.write') as print_mock:
             cmd ([".."])
@@ -227,7 +262,7 @@ class CatTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_unsuccessful_cat_of_nonexistent_child (self):
-        cmd = Cat (self.ldapy)
+        cmd = Cat (self.getLdapyAtRoot())
 
         nonexistent = "ou=Foobar"
 
@@ -239,27 +274,32 @@ class CatTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_cat_completer (self):
-        ldapy = getLdapy ()
-        cmd = Cat (ldapy)
-        root = "dc=nodomain"
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            container = p.container()
+            ldapy.changeDN (container.rdn)
 
-        # Test return all on empty list
-        matches = cmd.complete ([])
-        self.assertListEqual ([root], matches)
+            a = p.container(container)
+            b = p.container(container)
+            c = p.leaf(container)
 
-        # Test several matches 
-        ldapy.changeDN (root)
-        children = ["ou=Groups","ou=People"]
-        matches = cmd.complete (["ou="])
-        self.assertItemsEqual (children, matches)
+            cmd = Cat (ldapy)
 
-        # Test unique match
-        matches = cmd.complete (["ou=P"])
-        child = ["ou=People"]
-        self.assertListEqual (child, matches)
+            # Test return all on empty list
+            matches = cmd.complete ([])
+            self.assertListEqual (sorted([a.rdn, b.rdn, c.rdn]), sorted(matches))
+
+            # Test several matches 
+            matches = cmd.complete (["%s=" % a.dnComponent])
+            self.assertItemsEqual (sorted([a.rdn, b.rdn]), sorted(matches))
+
+            # Test unique match
+            unique = b.rdn[:-1]
+            matches = cmd.complete ([unique])
+            self.assertListEqual ([b.rdn], matches)
 
     def test_usage (self):
-        cmd = Cat (self.ldapy)
+        cmd = Cat (self.getLdapyAtRoot())
         with mock.patch('sys.stdout.write') as print_mock:
             cmd.usage ([])
 
