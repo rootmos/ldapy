@@ -21,14 +21,13 @@ class LdapObject(object):
         yield
 
 class Container(LdapObject):
-    def __init__(self, parent,
-            name = None, objectClass = "organizationalUnit", dnComponent="ou",
-            attr = None):
+    def __init__(self, parent, name, objectClass, dnComponent, attr):
         if name:
             self.name = name
         else:
             self.name = "Container%s" % salt()
 
+        self.objectClass = objectClass
         self.dnComponent = dnComponent
         self.parent = parent
         self.rdn = "%s=%s" % (dnComponent, self.name)
@@ -50,13 +49,13 @@ class Container(LdapObject):
         return self.children.__iter__()
 
 class Leaf(LdapObject):
-    def __init__(self, parent, name = None, objectClass = "organizationalRole",
-            dnComponent="cn", attr = None):
+    def __init__(self, parent, name, objectClass, dnComponent, attr):
         if name:
             self.name = name
         else:
             self.name = "Leaf%s" % salt()
 
+        self.objectClass = objectClass
         self.dnComponent = dnComponent
         self.parent = parent
         self.rdn = "%s=%s" % (dnComponent, self.name)
@@ -83,19 +82,19 @@ class Provisioning:
     def delete(self, obj):
         self.ldap.delete_s(obj.dn)
 
-    def container(self, parent = None, name = None, attr = None):
+    def container(self, parent = None, name = None, objectClass = "organizationalUnit", dnComponent="ou", attr = None):
         if not parent:
             parent = self.root
         
-        c = Container(parent, name=name, attr=attr)
+        c = Container(parent, name=name, attr=attr, objectClass = objectClass, dnComponent=dnComponent)
         self.add(c)
         return c
 
-    def leaf(self, parent = None, name = None, attr = None):
+    def leaf(self, parent = None, name = None, objectClass = "organizationalRole", dnComponent="cn", attr = None):
         if not parent:
             parent = self.root
         
-        l = Leaf(parent, name=name, attr=attr)
+        l = Leaf(parent, name=name, attr=attr, objectClass=objectClass, dnComponent=dnComponent)
         self.add(l)
         return l
 

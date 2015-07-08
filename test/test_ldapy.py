@@ -9,43 +9,53 @@ class BasicLdapyTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = Ldapy(self.con)
+            self.root = p.root
+            ldapy.changeDN (self.root)
+            return ldapy
 
     def test_list_roots (self):
         ldapy = Ldapy (self.con)
-        self.assertIn ("dc=nodomain", ldapy.children)
+        with configuration.provision() as p:
+            self.assertIn (p.root, ldapy.children)
 
     def test_change_DN_to_root (self):
-        ldapy = Ldapy (self.con)
+        ldapy = Ldapy(self.con)
 
-        root = "dc=nodomain"
-        ldapy.changeDN (root)
+        with configuration.provision() as p:
+            root = p.root
+            ldapy.changeDN (root)
 
-        self.assertEqual (root, ldapy.cwd)
-        self.assertIn ("top", ldapy.attributes["objectClass"])
+            self.assertEqual (root, ldapy.cwd)
+            self.assertIn ("top", ldapy.attributes["objectClass"])
 
     def test_change_DN_up_one_level (self):
-        ldapy = Ldapy (self.con)
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            c1 = p.container()
+            ldapy.changeDN(c1.rdn)
 
-        root = "dc=nodomain"
-        child = "ou=People"
+            c2 = p.container(c1)
+            ldapy.changeDN(c2.rdn)
 
-        ldapy.changeDN (root)
-        ldapy.changeDN (child)
-        self.assertEqual (ldapy.cwd, "%s,%s" % (child, root))
+            self.assertEqual (ldapy.cwd, c2.dn)
 
-        ldapy.goUpOneLevel ()
-        self.assertEqual (ldapy.cwd, root)
+            ldapy.goUpOneLevel ()
+            self.assertEqual (ldapy.cwd, c1.dn)
 
     def test_getAttributes_self_and_parent (self):
-        ldapy = Ldapy (self.con)
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            c1 = p.container(dnComponent="o", objectClass="organization")
+            ldapy.changeDN(c1.rdn)
 
-        root = "dc=nodomain"
-        child = "ou=People"
-        ldapy.changeDN (root)
-        ldapy.changeDN (child)
+            c2 = p.container(c1)
+            ldapy.changeDN(c2.rdn)
 
-        self.assertIn ("organizationalUnit", ldapy.getAttributes (".")["objectClass"])
-        self.assertIn ("top", ldapy.getAttributes ("..")["objectClass"])
+            self.assertIn (c2.objectClass, ldapy.getAttributes (".")["objectClass"])
+            self.assertIn (c1.objectClass, ldapy.getAttributes ("..")["objectClass"])
 
     def test_superroot_has_empty_attributes (self):
         ldapy = Ldapy (self.con)
@@ -53,34 +63,58 @@ class BasicLdapyTests (unittest.TestCase):
 
 
 class ChildCompleter (unittest.TestCase):
-
     def setUp (self):
         self.con = configuration.getConnection ()
-        self.ldapy = Ldapy (self.con)
-        root = "dc=nodomain"
-        self.ldapy.changeDN (root)
-        
-        self.child1 = "ou=People"
-        self.child2 = "ou=Groups"
+
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = Ldapy(self.con)
+            self.root = p.root
+            ldapy.changeDN (self.root)
+            return ldapy
 
     def test_empty_input (self):
-        matches = self.ldapy.completeChild ("")
-        self.assertIn (self.child1, matches)
-        self.assertIn (self.child2, matches)
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            c = p.container()
+            ldapy.changeDN(c.rdn)
+
+            l1 = p.leaf(c)
+            l2 = p.leaf(c)
+
+            matches = ldapy.completeChild ("")
+            self.assertListEqual(sorted([l1.rdn, l2.rdn]), sorted(matches))
 
     def test_matches_several (self):
-        matches = self.ldapy.completeChild ("ou=")
-        self.assertListEqual (matches, [self.child1, self.child2])
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            c = p.container()
+            ldapy.changeDN(c.rdn)
+
+            c0 = p.container(c)
+            l1 = p.leaf(c)
+            l2 = p.leaf(c)
+
+            matches = ldapy.completeChild ("%s=" % l1.dnComponent)
+            self.assertListEqual(sorted([l1.rdn, l2.rdn]), sorted(matches))
 
     def test_matches_unique (self):
-        matches = self.ldapy.completeChild (self.child1[:-1])
-        self.assertListEqual (matches, [self.child1])
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            c = p.container()
+            ldapy.changeDN(c.rdn)
 
-        matches = self.ldapy.completeChild (self.child2[:-1])
-        self.assertListEqual (matches, [self.child2])
+            l1 = p.leaf(c)
+            l2 = p.leaf(c)
+
+            matches = ldapy.completeChild (l1.rdn[:-1])
+            self.assertListEqual (matches, [l1.rdn])
+
+            matches = ldapy.completeChild (l2.rdn[:-1])
+            self.assertListEqual (matches, [l2.rdn])
 
     def test_no_matches (self):
-        matches = self.ldapy.completeChild ("dc=nonexistent")
+        matches = Ldapy(self.con).completeChild ("dc=nonexistent")
         self.assertListEqual (matches, [])
 
 
@@ -100,16 +134,16 @@ class ErrorLdapyTests (unittest.TestCase):
         self.assertEqual (str(received.exception), str(expected))
 
     def test_change_DN_to_nonexistent_child (self):
-        ldapy = Ldapy (self.con)
-        root = "dc=nodomain"
-        ldapy.changeDN (root)
+        with configuration.provision() as p:
+            ldapy = Ldapy (self.con)
+            ldapy.changeDN (p.root)
 
-        nonexistent = "ou=Foobar"
-        with self.assertRaises(NoSuchDN) as received:
-            ldapy.changeDN (nonexistent)
+            nonexistent = "ou=Foobar"
+            with self.assertRaises(NoSuchDN) as received:
+                ldapy.changeDN (nonexistent)
 
-        expected = NoSuchDN (nonexistent, root)
-        self.assertEqual (str(received.exception), str(expected))
+            expected = NoSuchDN (nonexistent, p.root)
+            self.assertEqual (str(received.exception), str(expected))
 
     def test_up_one_level_too_far (self):
         ldapy = Ldapy (self.con)
