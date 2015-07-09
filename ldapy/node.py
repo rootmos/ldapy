@@ -43,6 +43,8 @@ class Node:
 
     _dn_does_not_exist = "DN does not exits: %s"
     _attributes_failed = "Unable to obtain attributes for: %s"
+    _no_such_attribute = "%s has no such attribute: %s"
+    _attribute_has_no_such_value = "Attribute %s does not contain value: %s"
 
     def __init__ (self, con, dn, attributes = None):
         logger.info ("Creating Node with DN=[%s]" % dn)
@@ -92,12 +94,21 @@ class Node:
         except ldap.OTHER:
             raise NodeError (self, Node._attributes_failed % self.dn)
 
-    def setAttribute (self, attribute, newValue):
-        try:
-            oldValue = self.attributes[attribute][0]
-            oldAttrs = {attribute: oldValue}
-        except KeyError:
+    def setAttribute (self, attribute, newValue, replaceValue = None):
+        if replaceValue:
+            if attribute in self.attributes:
+                if replaceValue in self.attributes[attribute]:
+                    oldAttrs = {attribute: replaceValue}
+                else:
+                    raise NodeError (self, Node._attribute_has_no_such_value %
+                            (attribute, replaceValue))
+            else:
+                raise NodeError (self, Node._no_such_attribute %
+                            (self.dn, attribute))
+                pass
+        else:
             oldAttrs = {}
+
         newAttrs = {attribute: newValue}
 
         ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
