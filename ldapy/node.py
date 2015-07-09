@@ -16,6 +16,7 @@
 import connection
 import ldap
 import ldap.dn
+import ldap.modlist
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
@@ -90,6 +91,14 @@ class Node:
             raise NodeError (self, Node._dn_does_not_exist % self.dn)
         except ldap.OTHER:
             raise NodeError (self, Node._attributes_failed % self.dn)
+
+    def replaceAttribute (self, attribute, newValue):
+        oldValue = self.attributes[attribute][0]
+        oldAttrs = {attribute: oldValue}
+        newAttrs = {attribute: newValue}
+
+        ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
+        self.con.ldap.modify_s(self.dn, ldif)
 
     @property
     def children (self):

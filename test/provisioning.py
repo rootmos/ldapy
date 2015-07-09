@@ -82,6 +82,11 @@ class Provisioning:
     def delete(self, obj):
         self.ldap.delete_s(obj.dn)
 
+    def attribute(self, dn, attribute):
+        results = self.ldap.search_s(str(dn), ldap.SCOPE_BASE, attrlist = [attribute])
+        _, attributes = results[0]
+        return attributes[attribute]
+
     def container(self, parent = None, name = None, objectClass = "organizationalUnit", dnComponent="ou", attr = None):
         if not parent:
             parent = self.root
