@@ -85,7 +85,10 @@ class Provisioning:
     def attribute(self, dn, attribute):
         results = self.ldap.search_s(str(dn), ldap.SCOPE_BASE, attrlist = [attribute])
         _, attributes = results[0]
-        return attributes[attribute]
+        try:
+            return attributes[attribute]
+        except KeyError:
+            return []
 
     def container(self, parent = None, name = None, objectClass = "organizationalUnit", dnComponent="ou", attr = None):
         if not parent:

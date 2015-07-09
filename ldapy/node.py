@@ -92,9 +92,12 @@ class Node:
         except ldap.OTHER:
             raise NodeError (self, Node._attributes_failed % self.dn)
 
-    def replaceAttribute (self, attribute, newValue):
-        oldValue = self.attributes[attribute][0]
-        oldAttrs = {attribute: oldValue}
+    def setAttribute (self, attribute, newValue):
+        try:
+            oldValue = self.attributes[attribute][0]
+            oldAttrs = {attribute: oldValue}
+        except KeyError:
+            oldAttrs = {}
         newAttrs = {attribute: newValue}
 
         ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)

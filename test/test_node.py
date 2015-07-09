@@ -76,7 +76,7 @@ class BasicNodeTests (unittest.TestCase):
             for e in expect:
                 self.assertIn (e, relative)
 
-class ReplaceValueTests (unittest.TestCase):
+class ModifyAttributesTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -89,10 +89,22 @@ class ReplaceValueTests (unittest.TestCase):
             l = p.leaf(attr={attribute: oldValue})
 
             node = Node (self.con, l.dn)
-            node.replaceAttribute (attribute, newValue)
+            node.setAttribute (attribute, newValue)
 
-            self.assertListEqual([newValue], p.attribute(l, "description"))
+            self.assertListEqual([newValue], p.attribute(l, attribute))
 
+    def test_add_new_attribute (self):
+        with configuration.provision() as p:
+            attribute = "description"
+            newValue = "test_add_new_attribute"
+
+            l = p.leaf()
+            self.assertListEqual([], p.attribute(l, attribute))
+
+            node = Node (self.con, l.dn)
+            node.setAttribute (attribute, newValue)
+
+            self.assertListEqual([newValue], p.attribute(l, attribute))
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):
