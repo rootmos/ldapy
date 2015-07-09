@@ -105,6 +105,7 @@ class ModifyAttributesTests (unittest.TestCase):
             node.setAttribute (attribute, newValue)
 
             self.assertListEqual([newValue], p.attribute(l, attribute))
+            self.assertListEqual([newValue], node.attributes[attribute])
     
     def test_add_value_to_existing_attribute (self):
         with configuration.provision() as p:
@@ -119,6 +120,8 @@ class ModifyAttributesTests (unittest.TestCase):
 
             self.assertListEqual(sorted([newValue, oldValue]),
                                  sorted(p.attribute(l, attribute)))
+            self.assertListEqual(sorted([newValue, oldValue]),
+                                 sorted(node.attributes[attribute]))
 
     def test_replace_non_existent_value (self):
         with configuration.provision() as p:

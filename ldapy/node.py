@@ -95,6 +95,7 @@ class Node:
             raise NodeError (self, Node._attributes_failed % self.dn)
 
     def setAttribute (self, attribute, newValue, replaceValue = None):
+        # Figure out the difference
         if replaceValue:
             if attribute in self.attributes:
                 if replaceValue in self.attributes[attribute]:
@@ -105,14 +106,26 @@ class Node:
             else:
                 raise NodeError (self, Node._no_such_attribute %
                             (self.dn, attribute))
-                pass
         else:
             oldAttrs = {}
 
         newAttrs = {attribute: newValue}
-
+        
+        # Send the modification to the server
         ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
         self.con.ldap.modify_s(self.dn, ldif)
+
+        # Change our cached value
+        if replaceValue:
+            oldValues = self.attributes[attribute] 
+            self.attributes[attribute] = [
+                    newValue if (value == replaceValue) else value
+                    for value in oldValues]
+        else:
+            if attribute in self.attributes:
+                self.attributes[attribute].append(newValue)
+            else:
+                self.attributes[attribute] = [newValue]
 
     @property
     def children (self):
