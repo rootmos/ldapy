@@ -89,9 +89,27 @@ class ModifyAttributesTests (unittest.TestCase):
             l = p.leaf(attr={attribute: oldValue})
 
             node = Node (self.con, l.dn)
-            node.setAttribute (attribute, newValue, replaceValue = oldValue)
+            node.setAttribute (attribute, newValue, oldValue = oldValue)
 
             self.assertListEqual([newValue], p.attribute(l, attribute))
+            self.assertListEqual([newValue], node.attributes[attribute])
+
+    def test_replace_one_value_of_two (self):
+        with configuration.provision() as p:
+            attribute = "description"
+            newValue = "test_replace_one_value_of_two_new"
+            oldValue = "test_replace_one_value_of_two_old"
+            additionalValue = "test_replace_one_value_of_two_another_value"
+
+            l = p.leaf(attr={attribute: [oldValue, additionalValue]})
+
+            node = Node (self.con, l.dn)
+            node.setAttribute (attribute, newValue, oldValue = oldValue)
+
+            self.assertListEqual(sorted([newValue, additionalValue]),
+                                 sorted(p.attribute(l, attribute)))
+            self.assertListEqual(sorted([newValue, additionalValue]),
+                                 sorted(node.attributes[attribute]))
 
     def test_add_new_attribute (self):
         with configuration.provision() as p:
@@ -134,7 +152,7 @@ class ModifyAttributesTests (unittest.TestCase):
 
             node = Node (self.con, l.dn)
             with self.assertRaises (NodeError) as received:
-                node.setAttribute (attribute, newValue, replaceValue = nonExistentValue)
+                node.setAttribute (attribute, newValue, oldValue = nonExistentValue)
             msg = Node._attribute_has_no_such_value % (attribute, nonExistentValue)
             self.assertTrue (msg in str(received.exception))
 
@@ -149,10 +167,34 @@ class ModifyAttributesTests (unittest.TestCase):
 
             node = Node (self.con, l.dn)
             with self.assertRaises (NodeError) as received:
-                node.setAttribute (attribute, newValue, replaceValue = nonExistentValue)
+                node.setAttribute (attribute, newValue, oldValue = nonExistentValue)
             msg = Node._no_such_attribute % (l.dn, attribute)
             self.assertTrue (msg in str(received.exception))
 
+    def test_call_with_no_values (self):
+        with configuration.provision() as p:
+            attribute = "description"
+
+            l = p.leaf()
+            node = Node (self.con, l.dn)
+
+            with self.assertRaises (NodeError) as received:
+                node.setAttribute (attribute)
+            msg = Node._set_attribute_called_without_values
+            self.assertTrue (msg in str(received.exception))
+
+    def test_remove_value (self):
+        with configuration.provision() as p:
+            attribute = "description"
+            valueStays = "test_remove_value_stays"
+            valueGoes = "test_remove_value_goes"
+
+            l = p.leaf(attr={attribute: [valueStays, valueGoes]})
+            node = Node (self.con, l.dn)
+            node.setAttribute (attribute, oldValue = valueGoes, newValue = None)
+
+            self.assertListEqual([valueStays], p.attribute(l, attribute))
+            self.assertListEqual([valueStays], node.attributes[attribute])
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):

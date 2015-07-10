@@ -45,6 +45,7 @@ class Node:
     _attributes_failed = "Unable to obtain attributes for: %s"
     _no_such_attribute = "%s has no such attribute: %s"
     _attribute_has_no_such_value = "Attribute %s does not contain value: %s"
+    _set_attribute_called_without_values = "Need to specify either an old value or a new value."
 
     def __init__ (self, con, dn, attributes = None):
         logger.info ("Creating Node with DN=[%s]" % dn)
@@ -94,34 +95,49 @@ class Node:
         except ldap.OTHER:
             raise NodeError (self, Node._attributes_failed % self.dn)
 
-    def setAttribute (self, attribute, newValue, replaceValue = None):
+    def setAttribute (self, attribute, newValue = None, oldValue = None):
+        # Make sure we have enough arguments
+        if not newValue and not oldValue:
+            raise NodeError (self, Node._set_attribute_called_without_values)
+
         # Figure out the difference
-        if replaceValue:
+        newValues = None
+        if oldValue:
+            # We want to replace or remove something
             if attribute in self.attributes:
-                if replaceValue in self.attributes[attribute]:
-                    oldAttrs = {attribute: replaceValue}
+                oldValues = self.attributes[attribute]
+                if oldValue in oldValues:
+                    oldAttrs = {attribute: oldValues}
+                    if newValue:
+                        # We want to replace an existing value
+                        newValues = [newValue if (value == oldValue) else value
+                                for value in oldValues]
+                        newAttrs = {attribute: newValues}
+                    else:
+                        # We want to remove an existing value
+                        newValues = oldValues[:]
+                        newValues.remove (oldValue)
+                        newAttrs = {attribute: newValues}
                 else:
                     raise NodeError (self, Node._attribute_has_no_such_value %
-                            (attribute, replaceValue))
+                            (attribute, oldValue))
             else:
                 raise NodeError (self, Node._no_such_attribute %
                             (self.dn, attribute))
-        else:
+        else: # Here we know newValue != None
+            # We want to add something
             oldAttrs = {}
-
-        newAttrs = {attribute: newValue}
+            newAttrs = {attribute: newValue}
         
         # Send the modification to the server
         ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
+        print ldif
         self.con.ldap.modify_s(self.dn, ldif)
 
         # Change our cached value
-        if replaceValue:
-            oldValues = self.attributes[attribute] 
-            self.attributes[attribute] = [
-                    newValue if (value == replaceValue) else value
-                    for value in oldValues]
-        else:
+        if newValues:
+            self.attributes[attribute] = newValues
+        elif newValue and not oldValue:
             if attribute in self.attributes:
                 self.attributes[attribute].append(newValue)
             else:
