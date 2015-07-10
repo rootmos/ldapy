@@ -2,7 +2,7 @@ import configuration
 from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 import unittest
 import mock
-from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat
+from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat, Modify
 
 def getLdapy ():
     con = configuration.getConnection ()
@@ -321,3 +321,70 @@ class CatTests (unittest.TestCase):
         cmd (["a", "b"])
         self.assertTrue(cmd.usage.called)
 
+class ModifyTests (unittest.TestCase):
+
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            self.root = p.root
+            ldapy.changeDN (self.root)
+            return ldapy
+
+    def test_usage (self):
+        cmd = Modify (self.getLdapyAtRoot())
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = Modify._usage % "modify"
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_subcommands_are_called (self):
+        rdn = "cn=Relative"
+        args = ["a", "b", "c"]
+        cmd = Modify (self.getLdapyAtRoot())
+
+        subcommands = [("add", "ldapy.commands.Modify.add"),
+                       ("delete", "ldapy.commands.Modify.delete"),
+                       ("replace", "ldapy.commands.Modify.replace")]
+        for name, fcn in subcommands:
+            with mock.patch(fcn) as commandMock:
+                cmd([rdn, name] + args)
+                commandMock.assert_called_with (rdn, args)
+
+    def test_unknown_subcommand_print_error_calls_usage (self):
+        nonexistent = "non_existent_command"
+        cmd = Modify (self.getLdapyAtRoot())
+        cmd.usage = mock.MagicMock()
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd(["RDN", nonexistent])
+
+        msg = Modify._unknown_subcommand % nonexistent
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+        
+        self.assertTrue (cmd.usage.called)
+
+    def test_call_with_no_arguments_prints_error_calls_usage (self):
+        cmd = Modify (self.getLdapyAtRoot())
+        cmd.usage = mock.MagicMock()
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd([])
+
+        msg = Modify._too_few_arguments % cmd.name
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+        
+        self.assertTrue (cmd.usage.called)
+
+    def test_call_with_only_one_argument_prints_error_calls_usage (self):
+        cmd = Modify (self.getLdapyAtRoot())
+        cmd.usage = mock.MagicMock()
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd(["RDN"])
+
+        msg = Modify._too_few_arguments % cmd.name
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+        
+        self.assertTrue (cmd.usage.called)

@@ -126,3 +126,55 @@ Prints the attributes of a DN specified by relativeDN."""
 
     def usage (self, words):
         print Cat._usage % self.name
+
+class Modify (Command):
+    def __init__ (self, ldapy):
+        self.name = "modify"
+        Command.__init__ (self, self.name)
+        self.ldapy = ldapy
+
+    def __call__ (self, args):
+        if len(args) < 2:
+            print Modify._too_few_arguments % self.name
+            self.usage()
+            return 
+
+        rdn = args[0]
+        subcommand = args[1]
+        subArgs = args[2:]
+
+        if subcommand  == "add":
+            self.add (rdn, subArgs)
+        elif subcommand == "delete":
+            self.delete (rdn, subArgs)
+        elif subcommand == "replace":
+            self.replace (rdn, subArgs)
+        else:
+            print Modify._unknown_subcommand % subcommand
+            self.usage ()
+    
+    def complete (self, words):
+        pass
+    
+    _too_few_arguments = "%s called with too few arguments"
+    _unknown_subcommand = "No such subcommand: %s"
+    _usage = """Usage: %s relativeDN (add|delete|replace) ...
+Modifies attribute in the object specified by the relativeDN.
+
+Subcommands:
+    add ATTRIBUTE VALUE       - adds VALUE to ATTRIBUTE
+    delete ATTRIBUTE VALUE    - removes VALUE from ATTRIBUTE
+    replace ATTRIBUTE OLD NEW - replaces OLD value with NEW value in ATTRIBUTE
+"""
+
+    def usage (self, words):
+        print Modify._usage % self.name
+
+    def add (self, rdn,  args):
+        pass
+
+    def delete (self, rdn, args):
+        pass
+
+    def replace (self, rdn, args):
+        pass
