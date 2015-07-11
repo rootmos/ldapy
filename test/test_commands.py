@@ -75,7 +75,9 @@ class ChangeDNTests (unittest.TestCase):
 
     def test_cd_completer (self):
         with configuration.provision() as p:
+            # Isolate ourselves in a container to be sure about the contents
             container = p.container()
+
             a = p.container(container)
             b = p.container(container)
             c = p.leaf(container)
@@ -276,18 +278,19 @@ class CatTests (unittest.TestCase):
     def test_unsuccessful_cat_of_malformed_DN (self):
         cmd = Cat (self.getLdapyAtRoot())
 
-        nonexistent = "Foobar"
+        malformed = "Foobar"
 
         with mock.patch('sys.stdout.write') as print_mock:
-            cmd ([nonexistent])
+            cmd ([malformed])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        msg = NoSuchDN._no_such_DN_in_parent % (malformed, self.root)
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_cat_completer (self):
         ldapy = self.getLdapyAtRoot()
         with configuration.provision() as p:
+            # Isolate ourselves in a container to be sure about the contents
             container = p.container()
             ldapy.changeDN (container.rdn)
 
@@ -511,3 +514,48 @@ class ModifyTests (unittest.TestCase):
         msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_rdn_completer (self):
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            # Isolate ourselves in a container to be sure about the contents
+            container = p.container()
+            ldapy.changeDN (container.rdn)
+
+            a = p.container(container)
+            b = p.container(container)
+            c = p.leaf(container)
+
+            cmd = Modify (ldapy)
+
+            # Test return all on empty list
+            matches = cmd.complete ([])
+            self.assertListEqual (sorted([a.rdn, b.rdn, c.rdn]), sorted(matches))
+
+            # Test several matches 
+            matches = cmd.complete (["%s=" % a.dnComponent])
+            self.assertItemsEqual (sorted([a.rdn, b.rdn]), sorted(matches))
+
+            # Test unique match
+            unique = b.rdn[:-1]
+            matches = cmd.complete ([unique])
+            self.assertListEqual ([b.rdn], matches)
+
+    def test_no_completion_on_other_arguments (self):
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            container = p.container()
+            ldapy.changeDN (container.rdn)
+
+            l = p.leaf(container)
+            cmd = Modify (ldapy)
+            
+            args = []
+            for arg in ["a", "b", "c", "d"]:
+                args.append(arg)
+
+                allArgs = [l.rdn] + args
+                print "Calling cmd.complete with arguments: %s" % allArgs
+                matches = cmd.complete (allArgs)
+                self.assertListEqual(matches, [])
+

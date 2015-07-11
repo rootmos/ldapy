@@ -154,7 +154,14 @@ class Modify (Command):
             self.usage (args)
     
     def complete (self, words):
-        pass
+        # On the first word we complete by children
+        if len(words) <= 1:
+            if len(words) == 1:
+                return self.ldapy.completeChild (words[0])
+            else:
+                return self.ldapy.children
+        else:
+            return []
     
     _too_few_arguments = "%s called with too few arguments"
     _wrong_number_of_arguments_to_subcommand = "%s %s was called with wrong number of parameters"
