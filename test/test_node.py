@@ -187,6 +187,18 @@ class ModifyAttributesTests (unittest.TestCase):
     def test_remove_value (self):
         with configuration.provision() as p:
             attribute = "description"
+            valueGoes = "test_remove_value_goes"
+
+            l = p.leaf(attr={attribute: valueGoes})
+            node = Node (self.con, l.dn)
+            node.setAttribute (attribute, oldValue = valueGoes, newValue = None)
+
+            self.assertListEqual([], p.attribute(l, attribute))
+            self.assertTrue(attribute not in node.attributes)
+
+    def test_remove_value_two (self):
+        with configuration.provision() as p:
+            attribute = "description"
             valueStays = "test_remove_value_stays"
             valueGoes = "test_remove_value_goes"
 

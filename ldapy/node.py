@@ -129,13 +129,17 @@ class Node:
         
         # Send the modification to the server
         ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
-        print ldif
         self.con.ldap.modify_s(self.dn, ldif)
 
         # Change our cached value
         if newValues:
+            # The values were changed, but we still have some values left
             self.attributes[attribute] = newValues
+        elif oldValue and not newValue:
+            # A value was removed, leaving no other values
+            del self.attributes[attribute]
         elif newValue and not oldValue:
+            # We should add a new value
             if attribute in self.attributes:
                 self.attributes[attribute].append(newValue)
             else:
