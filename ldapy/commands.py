@@ -136,7 +136,7 @@ class Modify (Command):
     def __call__ (self, args):
         if len(args) < 2:
             print Modify._too_few_arguments % self.name
-            self.usage()
+            self.usage(args)
             return 
 
         rdn = args[0]
@@ -151,7 +151,7 @@ class Modify (Command):
             self.replace (rdn, subArgs)
         else:
             print Modify._unknown_subcommand % subcommand
-            self.usage ()
+            self.usage (args)
     
     def complete (self, words):
         pass
@@ -174,33 +174,45 @@ Subcommands:
     def add (self, rdn,  args):
         if len(args) != 2:
             print Modify._wrong_number_of_arguments_to_subcommand % (self.name, "add")
-            self.usage ()
+            self.usage (args)
             return
 
         attribute = args[0]
         newValue = args[1]
 
-        self.ldapy.setAttribute (rdn, attribute, newValue = newValue, oldValue = None)
+        try:
+            self.ldapy.setAttribute (rdn, attribute,
+                    newValue = newValue, oldValue = None)
+        except NoSuchDN as e:
+            print e
 
     def delete (self, rdn, args):
         if len(args) != 2:
             print Modify._wrong_number_of_arguments_to_subcommand % (self.name, "delete")
-            self.usage ()
+            self.usage (args)
             return
 
         attribute = args[0]
         oldValue = args[1]
 
-        self.ldapy.setAttribute (rdn, attribute, oldValue = oldValue, newValue = None)
+        try:
+            self.ldapy.setAttribute (rdn, attribute,
+                    oldValue = oldValue, newValue = None)
+        except NoSuchDN as e:
+            print e
 
     def replace (self, rdn, args):
         if len(args) != 3:
             print Modify._wrong_number_of_arguments_to_subcommand % (self.name, "replace")
-            self.usage ()
+            self.usage (args)
             return
 
         attribute = args[0]
         oldValue = args[1]
         newValue = args[2]
 
-        self.ldapy.setAttribute (rdn, attribute, oldValue = oldValue, newValue = newValue)
+        try:
+            self.ldapy.setAttribute (rdn, attribute,
+                    oldValue = oldValue, newValue = newValue)
+        except NoSuchDN as e:
+            print e

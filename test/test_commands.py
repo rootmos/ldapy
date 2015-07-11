@@ -112,7 +112,7 @@ class ChangeDNTests (unittest.TestCase):
     def test_syntax_error_calls_usage (self):
         ldapy = getLdapy ()
         cmd = ChangeDN (ldapy)
-        cmd.usage = mock.MagicMock ()
+        cmd.usage = mock.create_autospec(cmd.usage)
 
         # Test calling with no parameters
         cmd ([])
@@ -164,7 +164,7 @@ class ListTests (unittest.TestCase):
 
     def test_syntax_error_calls_usage (self):
         cmd = List (self.getLdapyAtRoot())
-        cmd.usage = mock.MagicMock ()
+        cmd.usage = mock.create_autospec(cmd.usage)
 
         # Test calling with too many parameters
         cmd (["a"])
@@ -207,7 +207,7 @@ class PrintWorkingDNTests (unittest.TestCase):
 
     def test_syntax_error_calls_usage (self):
         cmd = PrintWorkingDN (self.getLdapyAtRoot())
-        cmd.usage = mock.MagicMock ()
+        cmd.usage = mock.create_autospec(cmd.usage)
 
         # Test calling with too many parameters
         cmd (["a"])
@@ -310,7 +310,7 @@ class CatTests (unittest.TestCase):
     def test_syntax_error_calls_usage (self):
         ldapy = getLdapy ()
         cmd = Cat (ldapy)
-        cmd.usage = mock.MagicMock ()
+        cmd.usage = mock.create_autospec(cmd.usage)
 
         # Test calling with no parameters
         cmd ([])
@@ -356,7 +356,7 @@ class ModifyTests (unittest.TestCase):
     def test_unknown_subcommand_print_error_calls_usage (self):
         nonexistent = "non_existent_command"
         cmd = Modify (self.getLdapyAtRoot())
-        cmd.usage = mock.MagicMock()
+        cmd.usage = mock.create_autospec(cmd.usage)
         with mock.patch('sys.stdout.write') as print_mock:
             cmd(["RDN", nonexistent])
 
@@ -368,7 +368,7 @@ class ModifyTests (unittest.TestCase):
 
     def test_call_with_no_arguments_prints_error_calls_usage (self):
         cmd = Modify (self.getLdapyAtRoot())
-        cmd.usage = mock.MagicMock()
+        cmd.usage = mock.create_autospec(cmd.usage)
         with mock.patch('sys.stdout.write') as print_mock:
             cmd([])
 
@@ -380,7 +380,7 @@ class ModifyTests (unittest.TestCase):
 
     def test_call_with_only_one_argument_prints_error_calls_usage (self):
         cmd = Modify (self.getLdapyAtRoot())
-        cmd.usage = mock.MagicMock()
+        cmd.usage = mock.create_autospec(cmd.usage)
         with mock.patch('sys.stdout.write') as print_mock:
             cmd(["RDN"])
 
@@ -397,7 +397,7 @@ class ModifyTests (unittest.TestCase):
         for name, fcn in self.subcommands:
             # Call with too few arguments
             cmd = Modify (self.getLdapyAtRoot())
-            cmd.usage = mock.MagicMock()
+            cmd.usage = mock.create_autospec(cmd.usage)
 
             with mock.patch('sys.stdout.write') as print_mock:
                 cmd(["RDN", name] + tooFew)
@@ -410,7 +410,7 @@ class ModifyTests (unittest.TestCase):
         for name, fcn in self.subcommands:
             # Call with too many arguments
             cmd = Modify (self.getLdapyAtRoot())
-            cmd.usage = mock.MagicMock()
+            cmd.usage = mock.create_autospec(cmd.usage)
 
             with mock.patch('sys.stdout.write') as print_mock:
                 cmd(["RDN", name] + tooMany)
@@ -466,3 +466,36 @@ class ModifyTests (unittest.TestCase):
 
             ldapy.setAttribute.assert_called_with (l.rdn, attribute,
                     newValue = newValue, oldValue = oldValue)
+
+    def test_call_add_with_nonexistent_DN (self):
+        nonexistent = "dc=nonexistent"
+        cmd = Modify (self.getLdapyAtRoot())
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd([nonexistent, "add", "should_not_need_this", "foobar"])
+
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_call_delete_with_nonexistent_DN (self):
+        nonexistent = "dc=nonexistent"
+        cmd = Modify (self.getLdapyAtRoot())
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd([nonexistent, "delete", "should_not_need_this", "foobar"])
+
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_call_replace_with_nonexistent_DN (self):
+        nonexistent = "dc=nonexistent"
+        cmd = Modify (self.getLdapyAtRoot())
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd([nonexistent, "replace", "should_not_need_this", "foo", "bar"])
+
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
