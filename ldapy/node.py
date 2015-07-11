@@ -92,8 +92,6 @@ class Node:
             logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
         except ldap.NO_SUCH_OBJECT:
             raise NodeError (self, Node._dn_does_not_exist % self.dn)
-        except ldap.OTHER:
-            raise NodeError (self, Node._attributes_failed % self.dn)
 
     def setAttribute (self, attribute, newValue = None, oldValue = None):
         # Make sure we have enough arguments
