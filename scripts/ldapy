@@ -17,7 +17,7 @@
 
 from ldapy.commandline import Commandline
 from ldapy.ldapy import Ldapy
-from ldapy.commands import List, ChangeDN, PrintWorkingDN, Cat
+from ldapy.commands import List, ChangeDN, PrintWorkingDN, Cat, Modify
 import sys
 
 import logging
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     ldapy = Ldapy ()
 
     commands = [List (ldapy), ChangeDN (ldapy), PrintWorkingDN (ldapy),\
-                Cat (ldapy)]
+                Cat (ldapy), Modify (ldapy)]
 
     cli = Commandline (commands)
     cli.loop ()
