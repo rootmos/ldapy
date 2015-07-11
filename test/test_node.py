@@ -1,5 +1,6 @@
 from ldapy.node import Node, NodeError, DNError
 import unittest
+import mock
 import configuration
 import provisioning
 
@@ -215,6 +216,14 @@ class NodeErrors (unittest.TestCase):
 
         msg = Node._dn_does_not_exist % bad_dn
         self.assertTrue (msg in str(received.exception))
+
+    def test_non_existing_root_node (self):
+        nonexistent="dc=nonexistent"
+        with mock.patch ("ldapy.connection.Connection.roots",
+                new_callable=mock.PropertyMock,
+                return_value=[nonexistent]):
+            node = Node (self.con, None)
+            self.assertListEqual([], node.children)
 
 if __name__ == '__main__':
     unittest.main()
