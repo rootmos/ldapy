@@ -1,8 +1,8 @@
 import unittest
 import mock
 import configuration
-
-from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
+from ldapy.node import NodeError
+from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot, SetAttributeError
 
 
 class BasicLdapyTests (unittest.TestCase):
@@ -60,6 +60,23 @@ class BasicLdapyTests (unittest.TestCase):
     def test_superroot_has_empty_attributes (self):
         ldapy = Ldapy (self.con)
         self.assertDictEqual ({}, ldapy.attributes)
+
+    def test_setAttribute_calls_setAttribute_on_node (self):
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            l = p.leaf()
+
+            attribute = "description"
+            oldValue = "test_setAttribute_calls_setAttribute_on_node_old"
+            newValue = "test_setAttribute_calls_setAttribute_on_node_new"
+
+            with mock.patch('ldapy.node.Node.setAttribute') as setterMock:
+                ldapy.setAttribute (l.rdn, attribute, newValue = newValue,
+                        oldValue = oldValue)
+
+            expected = mock.call(attribute, newValue = newValue, oldValue = oldValue)
+            self.assertListEqual([expected], setterMock.call_args_list)
+
 
 
 class ChildCompleter (unittest.TestCase):
@@ -122,6 +139,13 @@ class ErrorLdapyTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = Ldapy(self.con)
+            self.root = p.root
+            ldapy.changeDN (self.root)
+            return ldapy
+
     def test_change_DN_to_nonexistent_root (self):
         ldapy = Ldapy (self.con)
 
@@ -153,6 +177,33 @@ class ErrorLdapyTests (unittest.TestCase):
 
         expected = AlreadyAtRoot ()
         self.assertEqual (str(received.exception), str(expected))
+
+    def test_NoSuchDN_for_setAttribute (self):
+        ldapy = self.getLdapyAtRoot()
+        nonexistentRDN = "dc=nonexistent"
+        nonexistentDN = "%s,%s" % (nonexistentRDN, ldapy.cwd)
+        attribute = "description"
+
+        with self.assertRaises(NoSuchDN) as received:
+            ldapy.setAttribute (nonexistentRDN, attribute)
+
+        expected = NoSuchDN (nonexistentRDN, ldapy.cwd)
+        self.assertEqual (str(received.exception), str(expected))
+
+    def test_setAttribute_errors_are_propagated (self):
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            l = p.leaf()
+            
+            testMessage = "test_setAttribute_errors_are_propagated_msg"
+            with mock.patch('ldapy.node.Node.setAttribute',
+                    side_effect=NodeError(None, testMessage)) as setterMock:
+
+                with self.assertRaises(SetAttributeError) as received:
+                    ldapy.setAttribute (l.rdn, "attribute")
+
+            self.assertEqual (received.exception.msg, testMessage)
+            self.assertEqual (str(received.exception), testMessage)
 
 class ArgumentParserTests (unittest.TestCase):
     def setUp (self):

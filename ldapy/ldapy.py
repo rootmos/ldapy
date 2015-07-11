@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with ldapy.  If not, see <http://www.gnu.org/licenses/>.
 
-from node import Node
+from node import Node, NodeError
 import argparse
 import ldapurl
 import connection
@@ -42,6 +42,12 @@ class AlreadyAtRoot (Exception):
     def __str__ (self):
         return AlreadyAtRoot._already_at_root
 
+class SetAttributeError (Exception):
+    def __init__ (self, msg):
+        self.msg = msg
+
+    def __str__ (self):
+        return self.msg
 
 class Ldapy:
     def __init__ (self, con = None):
@@ -83,6 +89,13 @@ class Ldapy:
 
     def getAttributes (self, relDN):
         return self._resolveRelativeDN (relDN).attributes
+
+    def setAttribute (self, relDN, attribute, newValue = None, oldValue = None):
+        try:
+            return self._resolveRelativeDN (relDN).setAttribute (attribute,
+                    newValue = newValue, oldValue = oldValue)
+        except NodeError as e:
+            raise SetAttributeError (e.msg)
 
     @property
     def children (self):
