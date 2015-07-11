@@ -322,6 +322,10 @@ class CatTests (unittest.TestCase):
         self.assertTrue(cmd.usage.called)
 
 class ModifyTests (unittest.TestCase):
+    def setUp (self):
+        self.subcommands = [("add", "ldapy.commands.Modify.add"),
+                ("delete", "ldapy.commands.Modify.delete"),
+                ("replace", "ldapy.commands.Modify.replace")]
 
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
@@ -344,10 +348,7 @@ class ModifyTests (unittest.TestCase):
         args = ["a", "b", "c"]
         cmd = Modify (self.getLdapyAtRoot())
 
-        subcommands = [("add", "ldapy.commands.Modify.add"),
-                       ("delete", "ldapy.commands.Modify.delete"),
-                       ("replace", "ldapy.commands.Modify.replace")]
-        for name, fcn in subcommands:
+        for name, fcn in self.subcommands:
             with mock.patch(fcn) as commandMock:
                 cmd([rdn, name] + args)
                 commandMock.assert_called_with (rdn, args)
@@ -388,3 +389,80 @@ class ModifyTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
         
         self.assertTrue (cmd.usage.called)
+
+    def test_call_sudcommands_with_wrong_number_of_parameters (self):
+        tooFew = []
+        tooMany = ["a", "b", "c", "d"]
+
+        for name, fcn in self.subcommands:
+            # Call with too few arguments
+            cmd = Modify (self.getLdapyAtRoot())
+            cmd.usage = mock.MagicMock()
+
+            with mock.patch('sys.stdout.write') as print_mock:
+                cmd(["RDN", name] + tooFew)
+
+            msg = Modify._wrong_number_of_arguments_to_subcommand % (cmd.name, name)
+            expect_calls = [mock.call(msg), mock.call("\n")]
+            self.assertListEqual (print_mock.call_args_list, expect_calls)
+            self.assertTrue (cmd.usage.called)
+
+        for name, fcn in self.subcommands:
+            # Call with too many arguments
+            cmd = Modify (self.getLdapyAtRoot())
+            cmd.usage = mock.MagicMock()
+
+            with mock.patch('sys.stdout.write') as print_mock:
+                cmd(["RDN", name] + tooMany)
+
+            msg = Modify._wrong_number_of_arguments_to_subcommand % (cmd.name, name)
+            expect_calls = [mock.call(msg), mock.call("\n")]
+            self.assertListEqual (print_mock.call_args_list, expect_calls)
+            self.assertTrue (cmd.usage.called)
+
+    def test_add_calls_setAttribute (self):
+        with configuration.provision() as p:
+            attribute = "description"
+            newValue = "test_add_calls_setAttribute"
+            l = p.leaf()
+
+            ldapy = self.getLdapyAtRoot()
+            ldapy.setAttribute = mock.create_autospec (ldapy.setAttribute)
+
+            cmd = Modify (ldapy)
+            cmd([l.rdn, "add", attribute, newValue])
+
+            ldapy.setAttribute.assert_called_with (l.rdn, attribute,
+                    newValue = newValue, oldValue = None)
+
+    def test_delete_calls_setAttribute (self):
+        with configuration.provision() as p:
+            attribute = "description"
+            removeValue = "test_delete_calls_setAttribute"
+            l = p.leaf()
+
+            ldapy = self.getLdapyAtRoot()
+            ldapy.setAttribute = mock.create_autospec (ldapy.setAttribute)
+
+            cmd = Modify (ldapy)
+            cmd([l.rdn, "delete", attribute, removeValue])
+
+            ldapy.setAttribute.assert_called_with (l.rdn, attribute,
+                    newValue = None, oldValue = removeValue)
+        
+    def test_replace_calls_setAttribute (self):
+        with configuration.provision() as p:
+            attribute = "description"
+            newValue = "test_replace_calls_setAttribute_new"
+            oldValue = "test_replace_calls_setAttribute_old"
+            
+            l = p.leaf()
+
+            ldapy = self.getLdapyAtRoot()
+            ldapy.setAttribute = mock.create_autospec (ldapy.setAttribute)
+
+            cmd = Modify (ldapy)
+            cmd([l.rdn, "replace", attribute, oldValue, newValue])
+
+            ldapy.setAttribute.assert_called_with (l.rdn, attribute,
+                    newValue = newValue, oldValue = oldValue)

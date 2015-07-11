@@ -157,6 +157,7 @@ class Modify (Command):
         pass
     
     _too_few_arguments = "%s called with too few arguments"
+    _wrong_number_of_arguments_to_subcommand = "%s %s was called with wrong number of parameters"
     _unknown_subcommand = "No such subcommand: %s"
     _usage = """Usage: %s relativeDN (add|delete|replace) ...
 Modifies attribute in the object specified by the relativeDN.
@@ -171,10 +172,35 @@ Subcommands:
         print Modify._usage % self.name
 
     def add (self, rdn,  args):
-        pass
+        if len(args) != 2:
+            print Modify._wrong_number_of_arguments_to_subcommand % (self.name, "add")
+            self.usage ()
+            return
+
+        attribute = args[0]
+        newValue = args[1]
+
+        self.ldapy.setAttribute (rdn, attribute, newValue = newValue, oldValue = None)
 
     def delete (self, rdn, args):
-        pass
+        if len(args) != 2:
+            print Modify._wrong_number_of_arguments_to_subcommand % (self.name, "delete")
+            self.usage ()
+            return
+
+        attribute = args[0]
+        oldValue = args[1]
+
+        self.ldapy.setAttribute (rdn, attribute, oldValue = oldValue, newValue = None)
 
     def replace (self, rdn, args):
-        pass
+        if len(args) != 3:
+            print Modify._wrong_number_of_arguments_to_subcommand % (self.name, "replace")
+            self.usage ()
+            return
+
+        attribute = args[0]
+        oldValue = args[1]
+        newValue = args[2]
+
+        self.ldapy.setAttribute (rdn, attribute, oldValue = oldValue, newValue = newValue)
