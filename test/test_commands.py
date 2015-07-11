@@ -273,6 +273,18 @@ class CatTests (unittest.TestCase):
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
+    def test_unsuccessful_cat_of_malformed_DN (self):
+        cmd = Cat (self.getLdapyAtRoot())
+
+        nonexistent = "Foobar"
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([nonexistent])
+
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
     def test_cat_completer (self):
         ldapy = self.getLdapyAtRoot()
         with configuration.provision() as p:
