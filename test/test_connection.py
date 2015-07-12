@@ -1,5 +1,6 @@
-from ldapy.connection import Connection, ConnectionError
+from ldapy.connection import Connection, ConnectionError, LdapError, scopeBase
 import unittest
+import mock
 import ldap
 import ldap.ldapobject
 import configuration
@@ -51,6 +52,25 @@ class ConnectionErrors (unittest.TestCase):
         expected = ConnectionError (con, msg)
         self.assertEqual (str(received.exception), str(expected))
 
+    def test_search_passes_on_ldap_errors (self):
+        self.con = Connection (configuration.uri)
+
+        expect = ldap.OTHER("Foobar")
+        with mock.patch ("ldap.ldapobject.LDAPObject.search_s", side_effect=expect):
+            with self.assertRaises (LdapError) as received:
+                self.con.search ("dc=root", scopeBase)
+            
+        self.assertEqual (str(expect), str(received.exception)) 
+
+    def test_modify_passes_on_ldap_errors (self):
+        self.con = Connection (configuration.uri)
+
+        expect = ldap.OTHER("Foobar")
+        with mock.patch ("ldap.ldapobject.LDAPObject.modify_s", side_effect=expect):
+            with self.assertRaises (LdapError) as received:
+                self.con.modify ("dc=root", {}, {})
+            
+        self.assertEqual (str(expect), str(received.exception)) 
 
 if __name__ == '__main__':
     unittest.main()

@@ -33,6 +33,13 @@ class ConnectionError (Exception):
         else:
             return self.msg
 
+class LdapError (Exception):
+    def __init__ (self, exception):
+        self.exception = exception
+
+    def __str__ (self):
+        return str(self.exception)
+
 class NoSuchOject (Exception):
     pass
 
@@ -97,11 +104,16 @@ class Connection:
             return self._ldap.search_s (dn, scope, attrlist = attrlist)
         except ldap.NO_SUCH_OBJECT as e:
             raise NoSuchOject()
+        except ldap.LDAPError as e:
+            raise LdapError (e)
 
     def modify (self, dn, oldAttrs, newAttrs):
-        ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
-        logger.debug ("LdapModify: dn=%s, ldif:\n%s" % (dn, ldif))
-        self._ldap.modify_s (dn, ldif)
+        try:
+            ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
+            logger.debug ("LdapModify: dn=%s, ldif:\n%s" % (dn, ldif))
+            self._ldap.modify_s (dn, ldif)
+        except ldap.LDAPError as e:
+            raise LdapError (e)
 
 scopeOneLevel = ldap.SCOPE_ONELEVEL
 scopeBase = ldap.SCOPE_BASE
