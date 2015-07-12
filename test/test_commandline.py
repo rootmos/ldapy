@@ -155,6 +155,23 @@ class BasicFunctionality (unittest.TestCase):
                  mock.call("\n")]
         assert print_mock.call_args_list == expect_calls
 
+    def test_command_raises_unexpected_exception (self):
+        name = "cmd"
+        error = "Foobar"
+
+        cmd = Command (name)
+        cmd.__call__ = mock.MagicMock (side_effect=Exception(error))
+
+        cli = Commandline ([cmd])
+
+        inputs = [name, "quit"]
+        with mock.patch('__builtin__.raw_input', side_effect=inputs),\
+                mock.patch('sys.stdout.write') as print_mock:
+                    cli.loop ()
+
+        expect_calls = [mock.call(error), mock.call("\n")]
+        assert print_mock.call_args_list == expect_calls
+
 
 def create_sut_process (cls, method):
     pwd = os.path.dirname (__file__)

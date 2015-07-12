@@ -84,21 +84,22 @@ class Commandline:
     _no_such_command = "No such command: %s"
 
     def loop (self):
-        try:
-            while True:
-                try:
-                    line = raw_input (self.prompt)
-                    self.parse_and_dispatch (line)
-                except NoSuchCommand as e:
-                    print e
-                except KeyboardInterrupt:
-                    sys.stdout.write ("\n")
-                    if not readline.get_line_buffer():
-                        return
-        except EOFError:
-            return
-        except ExitCommandline:
-            return
+        while True:
+           try:
+               line = raw_input (self.prompt)
+               self.parse_and_dispatch (line)
+           except NoSuchCommand as e:
+               print e
+           except KeyboardInterrupt:
+               sys.stdout.write ("\n")
+               if not readline.get_line_buffer():
+                   return
+           except EOFError:
+               return
+           except ExitCommandline:
+               return
+           except Exception as e:
+               print e
 
     def complete (self, text, state):
         # Check if it's the first time we are getting a call for this text,
