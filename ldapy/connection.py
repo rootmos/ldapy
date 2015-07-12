@@ -19,6 +19,8 @@ import sys
 import logging
 logger = logging.getLogger("ldapy.%s" %  __name__)
 
+import ldap.dn
+
 class ConnectionError (Exception):
     def __init__ (self, con, msg, info = None):
         self.con = con
@@ -31,6 +33,21 @@ class ConnectionError (Exception):
         else:
             return self.msg
 
+class NoSuchOject (Exception):
+    pass
+
+class DNDecodingError (Exception):
+    pass
+
+def dn2str (dn):
+    return ldap.dn.dn2str (dn)
+
+def str2dn (string):
+    try:
+        return ldap.dn.str2dn (string)
+    except ldap.DECODING_ERROR:
+        raise DNDecodingError()
+
 class Connection:
     """The class managing the LDAP connection."""
 
@@ -41,7 +58,7 @@ class Connection:
     def __init__ (self, uri, traces = 0):
         logger.info ("Connecting to %s" % uri)
         self.uri = uri
-        self.ldap = ldap.initialize (uri, trace_level = traces, trace_file = sys.stdout)
+        self._ldap = ldap.initialize (uri, trace_level = traces, trace_file = sys.stdout)
         self.connected = False
         self._roots = None
 
@@ -54,7 +71,7 @@ class Connection:
 
     def bind (self, who, cred):
         try:
-            self.ldap.simple_bind_s (who, cred)
+            self._ldap.simple_bind_s (who, cred)
         except ldap.SERVER_DOWN as e:
             self._raise_error (Connection._connection_error_msg % self.uri, e)
         except ldap.INVALID_CREDENTIALS as e:
@@ -67,10 +84,24 @@ class Connection:
     @property
     def roots (self):
         if not self._roots:
-            results = self.ldap.search_s ("", ldap.SCOPE_BASE, attrlist = ["namingContexts"])
+            results = self._ldap.search_s ("", ldap.SCOPE_BASE, attrlist = ["namingContexts"])
             self._roots = results[0][1]["namingContexts"]
 
             logger.debug ("Roots: %s" % self._roots)
 
         return self._roots
 
+
+    def search (self, dn, scope, attrlist = None):
+        try:
+            return self._ldap.search_s (dn, scope, attrlist = attrlist)
+        except ldap.NO_SUCH_OBJECT as e:
+            raise NoSuchOject()
+
+    def modify (self, dn, oldAttrs, newAttrs):
+        ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
+        logger.debug ("LdapModify: dn=%s, ldif:\n%s" % (dn, ldif))
+        self._ldap.modify_s (dn, ldif)
+
+scopeOneLevel = ldap.SCOPE_ONELEVEL
+scopeBase = ldap.SCOPE_BASE

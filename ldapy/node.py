@@ -14,9 +14,6 @@
 # along with ldapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import connection
-import ldap
-import ldap.dn
-import ldap.modlist
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
@@ -55,8 +52,8 @@ class Node:
         self._relativeChildren = None
 
         try:
-            self.dn = ldap.dn.dn2str(ldap.dn.str2dn(dn))
-        except ldap.DECODING_ERROR:
+            self.dn = connection.dn2str(connection.str2dn(dn))
+        except connection.DNDecodingError:
             raise DNError (dn)
 
         # If we were'n given a dn, then we populate the Node with the roots
@@ -86,11 +83,11 @@ class Node:
             return
 
         try:
-            nodes = self.con.ldap.search_s (self.dn, ldap.SCOPE_BASE)
+            nodes = self.con.search (self.dn, connection.scopeBase)
             node = nodes[0]
             self.attributes = node[1]
             logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
-        except ldap.NO_SUCH_OBJECT:
+        except connection.NoSuchOject:
             raise NodeError (self, Node._dn_does_not_exist % self.dn)
 
     def setAttribute (self, attribute, newValue = None, oldValue = None):
@@ -128,8 +125,7 @@ class Node:
             newAttrs = {attribute: newValue}
         
         # Send the modification to the server
-        ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
-        self.con.ldap.modify_s(self.dn, ldif)
+        self.con.modify(self.dn, oldAttrs, newAttrs)
 
         # Change our cached value
         if newValues:
@@ -149,7 +145,7 @@ class Node:
     def children (self):
         if self._children is None:
             self._children = []
-            children = self.con.ldap.search_s (self.dn, ldap.SCOPE_ONELEVEL)
+            children = self.con.search (self.dn, connection.scopeOneLevel)
             for child in children:
                 node = Node (self.con, child[0], child[1])
                 node.parent = self
@@ -173,8 +169,8 @@ class Node:
         if not to:
             to = self.parent
 
-        toDN = ldap.dn.str2dn (str(to))
-        myDN = ldap.dn.str2dn (self.dn)
+        toDN = connection.str2dn (str(to))
+        myDN = connection.str2dn (self.dn)
 
         for dn in reversed (toDN):
             if dn == myDN[-1]:
@@ -182,7 +178,7 @@ class Node:
             else:
                 break
 
-        return ldap.dn.dn2str (myDN)
+        return connection.dn2str (myDN)
 
     def __str__ (self):
         return self.dn
