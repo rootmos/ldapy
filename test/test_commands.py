@@ -2,7 +2,7 @@ import configuration
 from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
 import unittest
 import mock
-from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat, Modify
+from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat, Modify, Delete
 
 def getLdapy ():
     con = configuration.getConnection ()
@@ -559,3 +559,57 @@ class ModifyTests (unittest.TestCase):
                 matches = cmd.complete (allArgs)
                 self.assertListEqual(matches, [])
 
+
+class DeleteTests (unittest.TestCase):
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            self.root = p.root
+            ldapy.changeDN (self.root)
+            return ldapy
+
+    def test_usage (self):
+        cmd = Delete (self.getLdapyAtRoot())
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = Delete._usage % "delete"
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_successful_delete_calls_ldapy_delete (self):
+        ldapy = self.getLdapyAtRoot()
+        cmd = Delete (ldapy)
+
+        ldapy.delete = mock.create_autospec (ldapy.delete)
+        relDN = "dc=Foobar"
+        cmd([relDN])
+        ldapy.delete.assert_called_once_with (relDN)
+
+    def test_too_few_arguments_prints_error_calls_usage (self):
+        cmd = Delete (self.getLdapyAtRoot())
+
+        cmd.usage = mock.create_autospec(cmd.usage)
+        args = []
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd(args)
+
+        msg = Delete._wrong_number_of_arguments % cmd.name
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+        
+        cmd.usage.assert_called_once_with (args)
+
+    def test_too_many_arguments_prints_error_calls_usage (self):
+        cmd = Delete (self.getLdapyAtRoot())
+
+        cmd.usage = mock.create_autospec(cmd.usage)
+        args = ["a", "b"]
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd(args)
+
+        msg = Delete._wrong_number_of_arguments % cmd.name
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+        
+        cmd.usage.assert_called_once_with (args)

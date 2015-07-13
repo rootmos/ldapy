@@ -223,3 +223,27 @@ Subcommands:
                     oldValue = oldValue, newValue = newValue)
         except NoSuchDN as e:
             print e
+
+class Delete(Command):
+    def __init__ (self, ldapy):
+        self.name = "delete"
+        Command.__init__ (self, self.name)
+        self.ldapy = ldapy
+
+    def __call__ (self, args):
+        if len(args) != 1:
+            print Delete._wrong_number_of_arguments % self.name
+            self.usage (args)
+            return
+
+        relDN = args[0]
+        self.ldapy.delete (relDN)
+
+    _wrong_number_of_arguments = "%s has to be called with only one argument."
+    _usage = """Usage: %s relativeDN
+Deletes the object specified by the relativeDN, if the object has children they
+will be deleted recusively as well.
+"""
+
+    def usage (self, words):
+        print Delete._usage % self.name
