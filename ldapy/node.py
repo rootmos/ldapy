@@ -142,10 +142,16 @@ class Node:
                 self.attributes[attribute] = [newValue]
 
     def delete (self):
+        # Delete any children this Node has
         for child in self.children:
             child.delete ()
 
+        # Delete itself
         self.con.delete (self.dn)
+
+        # If this Node has a parent, remove this Node from its list
+        if self.parent:
+            self.parent.children.remove (self)
 
     @property
     def children (self):

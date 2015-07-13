@@ -224,6 +224,19 @@ class DeleteTests (unittest.TestCase):
 
             self.assertFalse (p.exists(l))
 
+    def test_delete_one_leaf (self):
+        with configuration.provision() as p:
+            l1 = p.leaf ()
+            l2 = p.leaf ()
+            self.assertTrue (p.exists(l1))
+            self.assertTrue (p.exists(l2))
+
+            node = Node (self.con, l1.dn)
+            node.delete ()
+
+            self.assertFalse (p.exists(l1))
+            self.assertTrue (p.exists(l2))
+
     def test_delete_empty_container (self):
         with configuration.provision() as p:
             c = p.container ()
@@ -239,7 +252,7 @@ class DeleteTests (unittest.TestCase):
             c = p.container ()
             self.assertTrue (p.exists(c))
 
-            l = p.container (c)
+            l = p.leaf (c)
             self.assertTrue (p.exists(l))
 
             node = Node (self.con, c.dn)
@@ -247,6 +260,36 @@ class DeleteTests (unittest.TestCase):
 
             self.assertFalse (p.exists(l))
             self.assertFalse (p.exists(c))
+
+
+    def test_update_children_in_parent_of_deleted_node (self):
+        with configuration.provision() as p:
+            c = p.container ()
+            self.assertTrue (p.exists(c))
+
+            l1 = p.leaf (c)
+            l2 = p.leaf (c)
+
+            self.assertTrue (p.exists(l1))
+            self.assertTrue (p.exists(l2))
+
+            node = Node (self.con, c.dn)
+
+            expectedChildren = sorted([l1.dn, l2.dn])
+            children = sorted([child.dn for child in node.children])
+            self.assertListEqual (children, expectedChildren)
+
+            for child in node.children:
+                if child.dn == l1.dn:
+                    child.delete()
+                    break
+
+            expectedChildren = sorted([l2.dn])
+            children = sorted([child.dn for child in node.children])
+            self.assertListEqual (children, expectedChildren)
+
+            self.assertFalse (p.exists(l1))
+            self.assertTrue (p.exists(l2))
 
 
 class NodeErrors (unittest.TestCase):
