@@ -3,6 +3,7 @@ import unittest
 import mock
 import ldap
 import ldap.ldapobject
+import ldap.modlist
 import configuration
 
 class BasicConnection(unittest.TestCase):
@@ -29,6 +30,51 @@ class Utilities (unittest.TestCase):
         with configuration.provision() as p:
             self.assertIn (p.root, self.con.roots)
 
+class Operations (unittest.TestCase):
+    def setUp (self):
+        self.con = Connection (configuration.uri)
+        self.con.bind (configuration.admin, configuration.admin_password)
+        assert self.con.connected
+
+    def test_search_delegates (self):
+        dn = "cn=Foobar"
+        scope = scopeBase
+        ldapScope = ldap.SCOPE_BASE
+        attrlist = ["a", "b"]
+        with mock.patch ("ldap.ldapobject.LDAPObject.search_s") as search_mock:
+            self.con.search (dn, scope, attrlist = attrlist)
+
+        expected = [mock.call(dn, ldapScope, attrlist = attrlist)]
+        self.assertListEqual (expected, search_mock.call_args_list)
+
+    def test_search_passes_on_ldap_errors (self):
+        expect = ldap.OTHER("Foobar")
+        with mock.patch ("ldap.ldapobject.LDAPObject.search_s", side_effect=expect):
+            with self.assertRaises (LdapError) as received:
+                self.con.search ("dc=root", scopeBase)
+
+        self.assertEqual (str(expect), str(received.exception))
+
+    def test_modify_delegates (self):
+        dn = "cn=Foobar"
+        oldAttrs = {"foo": "bar"}
+        newAttrs = {"foo": "baz"}
+        with mock.patch ("ldap.ldapobject.LDAPObject.modify_s") as modify_mock:
+            self.con.modify (dn, oldAttrs, newAttrs)
+
+        ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
+        expected = [mock.call(dn, ldif)]
+        self.assertListEqual (expected, modify_mock.call_args_list)
+
+    def test_modify_passes_on_ldap_errors (self):
+        expect = ldap.OTHER("Foobar")
+        with mock.patch ("ldap.ldapobject.LDAPObject.modify_s", side_effect=expect):
+            with self.assertRaises (LdapError) as received:
+                self.con.modify ("dc=root", {}, {})
+
+        self.assertEqual (str(expect), str(received.exception))
+
+
 class ConnectionErrors (unittest.TestCase):
 
     def test_bind_connect_error (self):
@@ -52,25 +98,6 @@ class ConnectionErrors (unittest.TestCase):
         expected = ConnectionError (con, msg)
         self.assertEqual (str(received.exception), str(expected))
 
-    def test_search_passes_on_ldap_errors (self):
-        self.con = Connection (configuration.uri)
-
-        expect = ldap.OTHER("Foobar")
-        with mock.patch ("ldap.ldapobject.LDAPObject.search_s", side_effect=expect):
-            with self.assertRaises (LdapError) as received:
-                self.con.search ("dc=root", scopeBase)
-            
-        self.assertEqual (str(expect), str(received.exception)) 
-
-    def test_modify_passes_on_ldap_errors (self):
-        self.con = Connection (configuration.uri)
-
-        expect = ldap.OTHER("Foobar")
-        with mock.patch ("ldap.ldapobject.LDAPObject.modify_s", side_effect=expect):
-            with self.assertRaises (LdapError) as received:
-                self.con.modify ("dc=root", {}, {})
-            
-        self.assertEqual (str(expect), str(received.exception)) 
 
 if __name__ == '__main__':
     unittest.main()
