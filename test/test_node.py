@@ -224,6 +224,30 @@ class DeleteTests (unittest.TestCase):
 
             self.assertFalse (p.exists(l))
 
+    def test_delete_empty_container (self):
+        with configuration.provision() as p:
+            c = p.container ()
+            self.assertTrue (p.exists(c))
+
+            node = Node (self.con, c.dn)
+            node.delete ()
+
+            self.assertFalse (p.exists(c))
+
+    def test_delete_nonempty_container (self):
+        with configuration.provision() as p:
+            c = p.container ()
+            self.assertTrue (p.exists(c))
+
+            l = p.container (c)
+            self.assertTrue (p.exists(l))
+
+            node = Node (self.con, c.dn)
+            node.delete ()
+
+            self.assertFalse (p.exists(l))
+            self.assertFalse (p.exists(c))
+
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):
