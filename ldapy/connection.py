@@ -118,6 +118,8 @@ class Connection:
     def delete (self, dn):
         try:
             self._ldap.delete_s (dn)
+        except ldap.NO_SUCH_OBJECT as e:
+            raise NoSuchOject()
         except ldap.LDAPError as e:
             raise LdapError (e)
 

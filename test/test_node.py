@@ -1,4 +1,4 @@
-from ldapy.node import Node, NodeError, DNError
+from ldapy.node import Node, NodeError, DNError, NonExistentNode
 import unittest
 import mock
 import configuration
@@ -250,9 +250,9 @@ class DeleteTests (unittest.TestCase):
     def test_delete_nonempty_container (self):
         with configuration.provision() as p:
             c = p.container ()
-            self.assertTrue (p.exists(c))
-
             l = p.leaf (c)
+
+            self.assertTrue (p.exists(c))
             self.assertTrue (p.exists(l))
 
             node = Node (self.con, c.dn)
@@ -291,6 +291,42 @@ class DeleteTests (unittest.TestCase):
             self.assertFalse (p.exists(l1))
             self.assertTrue (p.exists(l2))
 
+    def test_delete_node_twice (self):
+        with configuration.provision() as p:
+            l = p.leaf ()
+
+            node = Node (self.con, l.dn)
+
+            node.delete()
+            node.delete()
+
+    def test_delete_container_with_deleted_node (self):
+        with configuration.provision() as p:
+            c = p.leaf ()
+            l = p.leaf (c)
+
+            self.assertTrue (p.exists(c))
+            self.assertTrue (p.exists(l))
+
+            node = Node (self.con, c.dn)
+
+            expectedChildren = sorted([l.dn])
+            children = sorted([child.dn for child in node.children])
+            self.assertListEqual (children, expectedChildren)
+
+
+            # Delete the leaf on the server
+            p.delete (l)
+
+            # But the Node's blissfully unaware
+            expectedChildren = sorted([l.dn])
+            children = sorted([child.dn for child in node.children])
+            self.assertListEqual (children, expectedChildren)
+
+            self.assertTrue (p.exists(c))
+            self.assertFalse (p.exists(l))
+
+            node.delete()
 
 class NodeErrors (unittest.TestCase):
     def setUp (self):
@@ -306,11 +342,8 @@ class NodeErrors (unittest.TestCase):
 
     def test_dn_does_not_exist (self):
         bad_dn = "dc=does_not_exist"
-        with self.assertRaises (NodeError) as received:
+        with self.assertRaises (NonExistentNode):
             node = Node (self.con, bad_dn)
-
-        msg = Node._dn_does_not_exist % bad_dn
-        self.assertTrue (msg in str(received.exception))
 
     def test_non_existing_root_node (self):
         nonexistent="dc=nonexistent"
