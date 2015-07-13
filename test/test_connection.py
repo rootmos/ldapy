@@ -41,11 +41,10 @@ class Operations (unittest.TestCase):
         scope = scopeBase
         ldapScope = ldap.SCOPE_BASE
         attrlist = ["a", "b"]
-        with mock.patch ("ldap.ldapobject.LDAPObject.search_s") as search_mock:
+        with mock.patch ("ldap.ldapobject.LDAPObject.search_s", autospec=True) as search_mock:
             self.con.search (dn, scope, attrlist = attrlist)
 
-        expected = [mock.call(dn, ldapScope, attrlist = attrlist)]
-        self.assertListEqual (expected, search_mock.call_args_list)
+        search_mock.assert_called_once_with(self.con._ldap, dn, ldapScope, attrlist = attrlist)
 
     def test_search_passes_on_ldap_errors (self):
         expect = ldap.OTHER("Foobar")
@@ -59,12 +58,11 @@ class Operations (unittest.TestCase):
         dn = "cn=Foobar"
         oldAttrs = {"foo": "bar"}
         newAttrs = {"foo": "baz"}
-        with mock.patch ("ldap.ldapobject.LDAPObject.modify_s") as modify_mock:
+        with mock.patch ("ldap.ldapobject.LDAPObject.modify_s", autospec=True) as modify_mock:
             self.con.modify (dn, oldAttrs, newAttrs)
 
         ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
-        expected = [mock.call(dn, ldif)]
-        self.assertListEqual (expected, modify_mock.call_args_list)
+        modify_mock.assert_called_once_with (self.con._ldap, dn, ldif)
 
     def test_modify_passes_on_ldap_errors (self):
         expect = ldap.OTHER("Foobar")
@@ -74,6 +72,20 @@ class Operations (unittest.TestCase):
 
         self.assertEqual (str(expect), str(received.exception))
 
+    def test_delete_delegates (self):
+        dn = "cn=Foobar"
+        with mock.patch ("ldap.ldapobject.LDAPObject.delete_s", autospec=True) as delete_mock:
+            self.con.delete (dn)
+
+        delete_mock.assert_called_once_with (self.con._ldap, dn)
+
+    def test_delete_passes_on_ldap_errors (self):
+        expect = ldap.OTHER("Foobar")
+        with mock.patch ("ldap.ldapobject.LDAPObject.delete_s", side_effect=expect):
+            with self.assertRaises (LdapError) as received:
+                self.con.delete ("dc=root")
+
+        self.assertEqual (str(expect), str(received.exception))
 
 class ConnectionErrors (unittest.TestCase):
 

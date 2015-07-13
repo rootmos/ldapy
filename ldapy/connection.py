@@ -115,5 +115,11 @@ class Connection:
         except ldap.LDAPError as e:
             raise LdapError (e)
 
+    def delete (self, dn):
+        try:
+            self._ldap.delete_s (dn)
+        except ldap.LDAPError as e:
+            raise LdapError (e)
+
 scopeOneLevel = ldap.SCOPE_ONELEVEL
 scopeBase = ldap.SCOPE_BASE
