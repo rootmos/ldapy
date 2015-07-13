@@ -141,6 +141,10 @@ class Node:
             else:
                 self.attributes[attribute] = [newValue]
 
+    def delete (self):
+        logger.debug ("Deleting node with DN: %s" % self.dn)
+        self.con.delete (self.dn)
+
     @property
     def children (self):
         if self._children is None:

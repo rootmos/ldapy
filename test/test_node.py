@@ -209,6 +209,22 @@ class ModifyAttributesTests (unittest.TestCase):
             self.assertListEqual([valueStays], p.attribute(l, attribute))
             self.assertListEqual([valueStays], node.attributes[attribute])
 
+
+class DeleteTests (unittest.TestCase):
+    def setUp (self):
+        self.con = configuration.getConnection ()
+
+    def test_delete_leaf (self):
+        with configuration.provision() as p:
+            l = p.leaf ()
+            self.assertTrue (p.exists(l))
+
+            node = Node (self.con, l.dn)
+            node.delete ()
+
+            self.assertFalse (p.exists(l))
+
+
 class NodeErrors (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()

@@ -79,8 +79,11 @@ class Provisioning:
         self.ldap.add_s(obj.dn, ldif)
         self.provisionedDNs.appendleft(obj)
     
-    def delete(self, obj):
-        self.ldap.delete_s(obj.dn)
+    def delete(self, dn):
+        try:
+            self.ldap.delete_s(str(dn))
+        except ldap.NO_SUCH_OBJECT:
+            print "WARNING: %s already deleted" % dn
 
     def attribute(self, dn, attribute):
         results = self.ldap.search_s(str(dn), ldap.SCOPE_BASE, attrlist = [attribute])
@@ -89,6 +92,15 @@ class Provisioning:
             return attributes[attribute]
         except KeyError:
             return []
+
+    def exists (self, dn):
+        try:
+            result = self.ldap.search_s(str(dn), ldap.SCOPE_BASE, attrlist = ["objectClass"])
+            assert result[0][1]["objectClass"]
+            return True
+        except ldap.NO_SUCH_OBJECT:
+            return False
+
 
     def container(self, parent = None, name = None, objectClass = "organizationalUnit", dnComponent="ou", attr = None):
         if not parent:
