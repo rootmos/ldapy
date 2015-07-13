@@ -2,7 +2,7 @@ import unittest
 import mock
 import configuration
 from ldapy.node import NodeError
-from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot, SetAttributeError
+from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot, SetAttributeError, DeleteError
 
 
 class BasicLdapyTests (unittest.TestCase):
@@ -63,20 +63,30 @@ class BasicLdapyTests (unittest.TestCase):
 
     def test_setAttribute_calls_setAttribute_on_node (self):
         ldapy = self.getLdapyAtRoot()
-        with configuration.provision() as p:
+        with configuration.provision() as p, \
+                mock.patch('ldapy.node.Node.setAttribute', autospec=True) as setterMock:
             l = p.leaf()
 
             attribute = "description"
             oldValue = "test_setAttribute_calls_setAttribute_on_node_old"
             newValue = "test_setAttribute_calls_setAttribute_on_node_new"
 
-            with mock.patch('ldapy.node.Node.setAttribute') as setterMock:
-                ldapy.setAttribute (l.rdn, attribute, newValue = newValue,
-                        oldValue = oldValue)
+            child = ldapy._resolveRelativeDN (l.rdn)
+            ldapy.setAttribute (l.rdn, attribute,
+                    newValue = newValue, oldValue = oldValue)
+            setterMock.assert_called_once_with (child, attribute,
+                    newValue = newValue, oldValue = oldValue)
 
-            expected = mock.call(attribute, newValue = newValue, oldValue = oldValue)
-            self.assertListEqual([expected], setterMock.call_args_list)
+    def test_delete_calls_delete_on_node (self):
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p,\
+                mock.patch('ldapy.node.Node.delete', autospec=True) as deleteMock:
+            l = p.leaf()
 
+            child = ldapy._resolveRelativeDN (l.rdn)
+            ldapy.delete (l.rdn)
+
+            deleteMock.assert_called_once_with (child)
 
 
 class ChildCompleter (unittest.TestCase):
@@ -181,7 +191,6 @@ class ErrorLdapyTests (unittest.TestCase):
     def test_NoSuchDN_for_setAttribute (self):
         ldapy = self.getLdapyAtRoot()
         nonexistentRDN = "dc=nonexistent"
-        nonexistentDN = "%s,%s" % (nonexistentRDN, ldapy.cwd)
         attribute = "description"
 
         with self.assertRaises(NoSuchDN) as received:
@@ -197,13 +206,39 @@ class ErrorLdapyTests (unittest.TestCase):
             
             testMessage = "test_setAttribute_errors_are_propagated_msg"
             with mock.patch('ldapy.node.Node.setAttribute',
-                    side_effect=NodeError(None, testMessage)) as setterMock:
+                    side_effect=NodeError(None, testMessage)):
 
                 with self.assertRaises(SetAttributeError) as received:
                     ldapy.setAttribute (l.rdn, "attribute")
 
             self.assertEqual (received.exception.msg, testMessage)
             self.assertEqual (str(received.exception), testMessage)
+
+    def test_NoSuchDN_for_delete (self):
+        ldapy = self.getLdapyAtRoot()
+        nonexistentRDN = "dc=nonexistent"
+
+        with self.assertRaises(NoSuchDN) as received:
+            ldapy.delete (nonexistentRDN)
+
+        expected = NoSuchDN (nonexistentRDN, ldapy.cwd)
+        self.assertEqual (str(received.exception), str(expected))
+
+    def test_delete_errors_are_propagated (self):
+        ldapy = self.getLdapyAtRoot()
+        with configuration.provision() as p:
+            l = p.leaf()
+
+            testMessage = "test_delete_errors_are_propagated_msg"
+            with mock.patch('ldapy.node.Node.delete',
+                    side_effect=NodeError(None, testMessage)):
+
+                with self.assertRaises(DeleteError) as received:
+                    ldapy.delete (l.rdn)
+
+            self.assertEqual (received.exception.msg, testMessage)
+            self.assertEqual (str(received.exception), testMessage)
+
 
 class ArgumentParserTests (unittest.TestCase):
     def setUp (self):

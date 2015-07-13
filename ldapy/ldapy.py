@@ -42,12 +42,17 @@ class AlreadyAtRoot (Exception):
     def __str__ (self):
         return AlreadyAtRoot._already_at_root
 
-class SetAttributeError (Exception):
+class LdapyError (Exception):
+    def __str__ (self):
+        return self.msg
+
+class SetAttributeError (LdapyError):
     def __init__ (self, msg):
         self.msg = msg
 
-    def __str__ (self):
-        return self.msg
+class DeleteError (LdapyError):
+    def __init__ (self, msg):
+        self.msg = msg
 
 class Ldapy:
     def __init__ (self, con = None):
@@ -96,6 +101,12 @@ class Ldapy:
                     newValue = newValue, oldValue = oldValue)
         except NodeError as e:
             raise SetAttributeError (e.msg)
+
+    def delete (self, relDN):
+        try:
+            self._resolveRelativeDN (relDN).delete ()
+        except NodeError as e:
+            raise DeleteError (e.msg)
 
     @property
     def children (self):
