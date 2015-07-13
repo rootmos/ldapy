@@ -237,7 +237,10 @@ class Delete(Command):
             return
 
         relDN = args[0]
-        self.ldapy.delete (relDN)
+        try:
+            self.ldapy.delete (relDN)
+        except NoSuchDN as e:
+            print e
 
     _wrong_number_of_arguments = "%s has to be called with only one argument."
     _usage = """Usage: %s relativeDN

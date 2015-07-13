@@ -613,3 +613,14 @@ class DeleteTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
         
         cmd.usage.assert_called_once_with (args)
+
+    def test_non_existent_RDN (self):
+        nonexistent = "dc=Foobar"
+        cmd = Delete (self.getLdapyAtRoot())
+
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd ([nonexistent])
+
+        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
