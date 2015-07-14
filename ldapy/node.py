@@ -93,7 +93,7 @@ class Node:
             node = nodes[0]
             self.attributes = node[1]
             logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
-        except connection.NoSuchOject:
+        except connection.NoSuchObject:
             raise NonExistentNode (self)
 
     def setAttribute (self, attribute, newValue = None, oldValue = None):
@@ -160,7 +160,7 @@ class Node:
         # Delete itself, handle quietly the case when Node does not exists
         try:
             self.con.delete (self.dn)
-        except connection.NoSuchOject:
+        except connection.NoSuchObject:
             logger.warning ("Trying to delete non-existent Node: %s" % self.dn)
 
         # If this Node has a parent, remove this Node from its list
@@ -178,7 +178,7 @@ class Node:
                     node.parent = self
                     self._children.append (node)
                 logger.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
-            except connection.NoSuchOject:
+            except connection.NoSuchObject:
                 logger.warning ("Trying to fetch childen for non-existent Node: %s" % self.dn)
                 raise NonExistentNode (self)
 

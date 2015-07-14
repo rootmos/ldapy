@@ -40,8 +40,25 @@ class LdapError (Exception):
     def __str__ (self):
         return str(self.exception)
 
-class NoSuchOject (Exception):
-    pass
+class NoSuchObject (Exception):
+    def __init__ (self, dn):
+        self.dn = dn
+        self.matched = None
+
+    @staticmethod
+    def convert (dn, exception):
+        e = NoSuchObject (dn)
+        if "matched" in exception.message:
+            e.matched = exception.message["matched"]
+        return e
+
+class AlreadyExists (Exception):
+    def __init__ (self, dn):
+        self.dn = dn
+
+    @staticmethod
+    def convert (dn, exception):
+        return AlreadyExists (dn)
 
 class DNDecodingError (Exception):
     pass
@@ -103,7 +120,7 @@ class Connection:
         try:
             return self._ldap.search_s (dn, scope, attrlist = attrlist)
         except ldap.NO_SUCH_OBJECT as e:
-            raise NoSuchOject()
+            raise NoSuchObject.convert(dn, e)
         except ldap.LDAPError as e:
             raise LdapError (e)
 
@@ -119,9 +136,21 @@ class Connection:
         try:
             self._ldap.delete_s (dn)
         except ldap.NO_SUCH_OBJECT as e:
-            raise NoSuchOject()
+            raise NoSuchObject.convert (dn, e)
         except ldap.LDAPError as e:
             raise LdapError (e)
+
+    def add (self, dn, attrs):
+        ldif = ldap.modlist.addModlist (attrs)
+        try:
+            self._ldap.add_s (dn, ldif)
+        except ldap.NO_SUCH_OBJECT as e:
+            raise NoSuchObject.convert (dn, e)
+        except ldap.ALREADY_EXISTS as e:
+            raise AlreadyExists.convert (dn, e)
+        except ldap.LDAPError as e:
+            raise LdapError (e)
+
 
 scopeOneLevel = ldap.SCOPE_ONELEVEL
 scopeBase = ldap.SCOPE_BASE

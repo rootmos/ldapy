@@ -1,4 +1,4 @@
-from ldapy.connection import Connection, ConnectionError, LdapError, scopeBase
+from ldapy.connection import Connection, ConnectionError, LdapError, scopeBase, NoSuchObject, AlreadyExists
 import unittest
 import mock
 import ldap
@@ -86,6 +86,56 @@ class Operations (unittest.TestCase):
                 self.con.delete ("dc=root")
 
         self.assertEqual (str(expect), str(received.exception))
+
+
+class AddTests (unittest.TestCase):
+    def setUp (self):
+        self.con = Connection (configuration.uri)
+        self.con.bind (configuration.admin, configuration.admin_password)
+        assert self.con.connected
+
+    def test_add_delegates (self):
+        dn = "cn=Foobar"
+        attrs = {"foo": "bar"}
+        with mock.patch ("ldap.ldapobject.LDAPObject.add_s", autospec=True) as add_mock:
+            self.con.add (dn, attrs)
+
+        ldif = ldap.modlist.addModlist (attrs)
+        add_mock.assert_called_once_with (self.con._ldap, dn, ldif)
+
+    def test_add_to_nonexistent_container (self):
+        with configuration.provision() as p:
+            root = p.root
+
+        ou = "ou=nonexistent"
+        rdn = "cn=Foobar"
+        dn = "%s,%s,%s" % (rdn, ou, root)
+        attr = {"objectClass": "organizationalRole"}
+
+        with self.assertRaises(NoSuchObject) as received:
+            self.con.add (dn, attr)
+
+        self.assertEqual (received.exception.dn, dn)
+        self.assertEqual (received.exception.matched, root)
+
+    def test_add_with_existing_DN (self):
+        with configuration.provision() as p:
+            l = p.leaf ()
+            
+            attr = {"objectClass": "organizationalRole"}
+            with self.assertRaises(AlreadyExists) as received:
+                self.con.add (l.dn, attr)
+            
+            self.assertEqual (received.exception.dn, l.dn)
+
+    def test_add_passes_on_ldap_errors (self):
+        expect = ldap.OTHER("Foobar")
+        with mock.patch ("ldap.ldapobject.LDAPObject.add_s", side_effect=expect):
+            with self.assertRaises (LdapError) as received:
+                self.con.add ("dc=Foobar", {})
+
+        self.assertEqual (str(expect), str(received.exception))
+
 
 class ConnectionErrors (unittest.TestCase):
 
