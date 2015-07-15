@@ -14,6 +14,7 @@
 # along with ldapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import connection
+import exceptions
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
@@ -59,7 +60,7 @@ class Node:
 
         try:
             self.dn = connection.dn2str(connection.str2dn(dn))
-        except connection.DNDecodingError:
+        except exceptions.DNDecodingError:
             raise DNError (dn)
 
         # If we were'n given a dn, then we populate the Node with the roots
@@ -93,7 +94,7 @@ class Node:
             node = nodes[0]
             self.attributes = node[1]
             logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
-        except connection.NoSuchObject:
+        except exceptions.NoSuchObject:
             raise NonExistentNode (self)
 
     def setAttribute (self, attribute, newValue = None, oldValue = None):
@@ -160,7 +161,7 @@ class Node:
         # Delete itself, handle quietly the case when Node does not exists
         try:
             self.con.delete (self.dn)
-        except connection.NoSuchObject:
+        except exceptions.NoSuchObject:
             logger.warning ("Trying to delete non-existent Node: %s" % self.dn)
 
         # If this Node has a parent, remove this Node from its list
@@ -178,7 +179,7 @@ class Node:
                     node.parent = self
                     self._children.append (node)
                 logger.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
-            except connection.NoSuchObject:
+            except exceptions.NoSuchObject:
                 logger.warning ("Trying to fetch childen for non-existent Node: %s" % self.dn)
                 raise NonExistentNode (self)
 

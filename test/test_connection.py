@@ -1,4 +1,5 @@
-from ldapy.connection import Connection, ConnectionError, LdapError, scopeBase, NoSuchObject, AlreadyExists
+from ldapy.connection import Connection, ConnectionError, scopeBase
+from ldapy.exceptions import LdapError, NoSuchObject, AlreadyExists
 import unittest
 import mock
 import ldap
