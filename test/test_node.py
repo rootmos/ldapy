@@ -1,4 +1,5 @@
-from ldapy.node import Node, NodeError, DNError, NonExistentNode
+from ldapy.node import Node, NodeError
+from ldapy.exceptions import DNDecodingError, NoSuchObject
 import unittest
 import mock
 import configuration
@@ -334,15 +335,15 @@ class NodeErrors (unittest.TestCase):
 
     def test_malformed_dn (self):
         malformed_dn = "malformed"
-        with self.assertRaises (DNError) as received:
+        with self.assertRaises (DNDecodingError) as received:
             node = Node (self.con, malformed_dn)
 
-        msg = DNError._malformed_dn_message % malformed_dn
+        msg = DNDecodingError._malformed_dn_message % malformed_dn
         self.assertTrue (msg in str(received.exception))
 
     def test_dn_does_not_exist (self):
         bad_dn = "dc=does_not_exist"
-        with self.assertRaises (NonExistentNode):
+        with self.assertRaises (NoSuchObject):
             node = Node (self.con, bad_dn)
 
     def test_non_existing_root_node (self):

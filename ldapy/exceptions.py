@@ -32,6 +32,11 @@ class NoSuchObject (Exception):
             e.matched = exception.message["matched"]
         return e
 
+    _dn_does_not_exist = "DN does not exits: %s"
+
+    def __str__ (self):
+        return self._dn_does_not_exist % self.dn
+
 class AlreadyExists (Exception):
     def __init__ (self, dn):
         self.dn = dn
@@ -43,3 +48,8 @@ class AlreadyExists (Exception):
 class DNDecodingError (Exception):
     def __init__ (self, string):
         self.string = string
+
+    _malformed_dn_message = "Malformed DN: %s"
+
+    def __str__ (self):
+        return self._malformed_dn_message % self.string

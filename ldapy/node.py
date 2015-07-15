@@ -19,15 +19,6 @@ import exceptions
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
 
-class DNError (Exception):
-    def __init__ (self, dn):
-        self.dn = dn
-
-    _malformed_dn_message = "Malformed DN: %s"
-
-    def __str__ (self):
-        return DNError._malformed_dn_message % self.dn
-
 class NodeError (Exception):
     def __init__ (self, node, msg):
         self.node = node
@@ -35,13 +26,6 @@ class NodeError (Exception):
 
     def __str__ (self):
         return "Node(\"%s\"): %s" % (self.node.dn, self.msg)
-
-class NonExistentNode (NodeError):
-    _dn_does_not_exist = "DN does not exits: %s"
-
-    def __init__ (self, node):
-        self.node = node
-        self.msg = NonExistentNode._dn_does_not_exist % node.dn
 
 class Node:
     """Class representing a node in the database"""
@@ -61,7 +45,7 @@ class Node:
         try:
             self.dn = connection.dn2str(connection.str2dn(dn))
         except exceptions.DNDecodingError:
-            raise DNError (dn)
+            raise exceptions.DNDecodingError (dn)
 
         # If we were'n given a dn, then we populate the Node with the roots
         if not self.dn:
@@ -72,7 +56,7 @@ class Node:
                     node = Node (self.con, root)
                     node.parent = self
                     self._children.append (node)
-                except NodeError as e:
+                except exceptions.NoSuchObject as e:
                     logger.error (e)
                     logger.error ("Skipping root %s" % root)
 
@@ -89,13 +73,10 @@ class Node:
             self.attributes = {}
             return
 
-        try:
-            nodes = self.con.search (self.dn, connection.scopeBase)
-            node = nodes[0]
-            self.attributes = node[1]
-            logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
-        except exceptions.NoSuchObject:
-            raise NonExistentNode (self)
+        nodes = self.con.search (self.dn, connection.scopeBase)
+        node = nodes[0]
+        self.attributes = node[1]
+        logger.debug ("Attributes for DN=[%s]: %s" % (self.dn, self.attributes))
 
     def setAttribute (self, attribute, newValue = None, oldValue = None):
         # Make sure we have enough arguments
@@ -151,7 +132,7 @@ class Node:
     def delete (self):
         try:
             children = self.children
-        except NonExistentNode:
+        except exceptions.NoSuchObject:
             return
 
         # Delete any children this Node has
@@ -172,16 +153,12 @@ class Node:
     def children (self):
         if self._children is None:
             self._children = []
-            try:
-                children = self.con.search (self.dn, connection.scopeOneLevel)
-                for child in children:
-                    node = Node (self.con, child[0], child[1])
-                    node.parent = self
-                    self._children.append (node)
-                logger.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
-            except exceptions.NoSuchObject:
-                logger.warning ("Trying to fetch childen for non-existent Node: %s" % self.dn)
-                raise NonExistentNode (self)
+            children = self.con.search (self.dn, connection.scopeOneLevel)
+            for child in children:
+                node = Node (self.con, child[0], child[1])
+                node.parent = self
+                self._children.append (node)
+            logger.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
 
         return self._children
 
