@@ -15,6 +15,7 @@
 
 import ldap
 import sys
+import exceptions
 
 import logging
 logger = logging.getLogger("ldapy.%s" %  __name__)
@@ -33,36 +34,6 @@ class ConnectionError (Exception):
         else:
             return self.msg
 
-class LdapError (Exception):
-    def __init__ (self, exception):
-        self.exception = exception
-
-    def __str__ (self):
-        return str(self.exception)
-
-class NoSuchObject (Exception):
-    def __init__ (self, dn):
-        self.dn = dn
-        self.matched = None
-
-    @staticmethod
-    def convert (dn, exception):
-        e = NoSuchObject (dn)
-        if "matched" in exception.message:
-            e.matched = exception.message["matched"]
-        return e
-
-class AlreadyExists (Exception):
-    def __init__ (self, dn):
-        self.dn = dn
-
-    @staticmethod
-    def convert (dn, exception):
-        return AlreadyExists (dn)
-
-class DNDecodingError (Exception):
-    pass
-
 def dn2str (dn):
     return ldap.dn.dn2str (dn)
 
@@ -70,7 +41,7 @@ def str2dn (string):
     try:
         return ldap.dn.str2dn (string)
     except ldap.DECODING_ERROR:
-        raise DNDecodingError()
+        raise exceptions.DNDecodingError(string)
 
 class Connection:
     """The class managing the LDAP connection."""
@@ -120,9 +91,9 @@ class Connection:
         try:
             return self._ldap.search_s (dn, scope, attrlist = attrlist)
         except ldap.NO_SUCH_OBJECT as e:
-            raise NoSuchObject.convert(dn, e)
+            raise exceptions.NoSuchObject.convert(dn, e)
         except ldap.LDAPError as e:
-            raise LdapError (e)
+            raise exceptions.LdapError (e)
 
     def modify (self, dn, oldAttrs, newAttrs):
         try:
@@ -130,26 +101,26 @@ class Connection:
             logger.debug ("LdapModify: dn=%s, ldif:\n%s" % (dn, ldif))
             self._ldap.modify_s (dn, ldif)
         except ldap.LDAPError as e:
-            raise LdapError (e)
+            raise exceptions.LdapError (e)
 
     def delete (self, dn):
         try:
             self._ldap.delete_s (dn)
         except ldap.NO_SUCH_OBJECT as e:
-            raise NoSuchObject.convert (dn, e)
+            raise exceptions.NoSuchObject.convert (dn, e)
         except ldap.LDAPError as e:
-            raise LdapError (e)
+            raise exceptions.LdapError (e)
 
     def add (self, dn, attrs):
         ldif = ldap.modlist.addModlist (attrs)
         try:
             self._ldap.add_s (dn, ldif)
         except ldap.NO_SUCH_OBJECT as e:
-            raise NoSuchObject.convert (dn, e)
+            raise exceptions.NoSuchObject.convert (dn, e)
         except ldap.ALREADY_EXISTS as e:
-            raise AlreadyExists.convert (dn, e)
+            raise exceptions.AlreadyExists.convert (dn, e)
         except ldap.LDAPError as e:
-            raise LdapError (e)
+            raise exceptions.LdapError (e)
 
 
 scopeOneLevel = ldap.SCOPE_ONELEVEL

@@ -1,8 +1,9 @@
 import configuration
-from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
+from ldapy.ldapy import Ldapy, AlreadyAtRoot
 import unittest
 import mock
 from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat, Modify, Delete
+from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
 
 def getLdapy ():
     con = configuration.getConnection ()
@@ -41,7 +42,7 @@ class ChangeDNTests (unittest.TestCase):
         with mock.patch('sys.stdout.write') as print_mock:
             cmd ([nonexistent])
 
-        msg = NoSuchDN._no_such_DN_in_root % nonexistent
+        msg = NoSuchObjectInRoot._no_such_DN_in_root % nonexistent
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
@@ -52,12 +53,13 @@ class ChangeDNTests (unittest.TestCase):
 
             cmd = ChangeDN (ldapy)
 
-            nonexistent = "ou=Foobar"
+            nonexistentRDN = "ou=Foobar"
+            nonexistent = "%s,%s" % (nonexistentRDN, p.root)
 
             with mock.patch('sys.stdout.write') as print_mock:
-                cmd ([nonexistent])
+                cmd ([nonexistentRDN])
 
-            msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, p.root)
+            msg = NoSuchObject._dn_does_not_exist % nonexistent
             expect_calls = [mock.call(msg), mock.call("\n")]
             self.assertListEqual (print_mock.call_args_list, expect_calls)
 
@@ -266,24 +268,26 @@ class CatTests (unittest.TestCase):
     def test_unsuccessful_cat_of_nonexistent_child (self):
         cmd = Cat (self.getLdapyAtRoot())
 
-        nonexistent = "ou=Foobar"
+        nonexistentRDN = "ou=Foobar"
+        nonexistent = "%s,%s" % (nonexistentRDN, self.root)
 
         with mock.patch('sys.stdout.write') as print_mock:
-            cmd ([nonexistent])
+            cmd ([nonexistentRDN])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        msg = NoSuchObject._dn_does_not_exist % nonexistent
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_unsuccessful_cat_of_malformed_DN (self):
         cmd = Cat (self.getLdapyAtRoot())
 
-        malformed = "Foobar"
+        malformedRDN = "Foobar"
+        malformed = "%s,%s" % (malformedRDN, self.root)
 
         with mock.patch('sys.stdout.write') as print_mock:
-            cmd ([malformed])
+            cmd ([malformedRDN])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (malformed, self.root)
+        msg = NoSuchObject._dn_does_not_exist % malformed
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
@@ -342,10 +346,12 @@ class ModifyTests (unittest.TestCase):
                 ("delete", "ldapy.commands.Modify.delete"),
                 ("replace", "ldapy.commands.Modify.replace")]
 
+        with configuration.provision() as p:
+            self.root = p.root
+
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
             ldapy = getLdapy ()
-            self.root = p.root
             ldapy.changeDN (self.root)
             return ldapy
 
@@ -483,35 +489,41 @@ class ModifyTests (unittest.TestCase):
                     newValue = newValue, oldValue = oldValue)
 
     def test_call_add_with_nonexistent_DN (self):
-        nonexistent = "dc=nonexistent"
+        nonexistentRDN = "dc=nonexistent"
+        nonexistent = "%s,%s" % (nonexistentRDN, self.root)
+
         cmd = Modify (self.getLdapyAtRoot())
 
         with mock.patch('sys.stdout.write') as print_mock:
-            cmd([nonexistent, "add", "should_not_need_this", "foobar"])
+            cmd([nonexistentRDN, "add", "should_not_need_this", "foobar"])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        msg = NoSuchObject._dn_does_not_exist % nonexistent
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_call_delete_with_nonexistent_DN (self):
-        nonexistent = "dc=nonexistent"
+        nonexistentRDN = "dc=nonexistent"
+        nonexistent = "%s,%s" % (nonexistentRDN, self.root)
+
         cmd = Modify (self.getLdapyAtRoot())
 
         with mock.patch('sys.stdout.write') as print_mock:
-            cmd([nonexistent, "delete", "should_not_need_this", "foobar"])
+            cmd([nonexistentRDN, "delete", "should_not_need_this", "foobar"])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        msg = NoSuchObject._dn_does_not_exist % nonexistent
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_call_replace_with_nonexistent_DN (self):
-        nonexistent = "dc=nonexistent"
+        nonexistentRDN = "dc=nonexistent"
+        nonexistent = "%s,%s" % (nonexistentRDN, self.root)
+
         cmd = Modify (self.getLdapyAtRoot())
 
         with mock.patch('sys.stdout.write') as print_mock:
-            cmd([nonexistent, "replace", "should_not_need_this", "foo", "bar"])
+            cmd([nonexistentRDN, "replace", "should_not_need_this", "foo", "bar"])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        msg = NoSuchObject._dn_does_not_exist % nonexistent
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
@@ -615,12 +627,15 @@ class DeleteTests (unittest.TestCase):
         cmd.usage.assert_called_once_with (args)
 
     def test_non_existent_RDN (self):
-        nonexistent = "dc=Foobar"
+        with configuration.provision() as p:
+            nonexistentRDN = "dc=Foobar"
+            nonexistent = "%s,%s" % (nonexistentRDN, p.root)
+
         cmd = Delete (self.getLdapyAtRoot())
 
         with mock.patch('sys.stdout.write') as print_mock:
-            cmd ([nonexistent])
+            cmd ([nonexistentRDN])
 
-        msg = NoSuchDN._no_such_DN_in_parent % (nonexistent, self.root)
+        msg = NoSuchObject._dn_does_not_exist % nonexistent
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
