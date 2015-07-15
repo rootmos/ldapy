@@ -14,7 +14,8 @@
 # along with ldapy.  If not, see <http://www.gnu.org/licenses/>.
 
 from commandline import Command
-from ldapy import Ldapy, NoSuchDN, AlreadyAtRoot
+from ldapy import Ldapy, AlreadyAtRoot
+from exceptions import NoSuchObject, NoSuchObjectInRoot
 
 class List (Command):
     def __init__ (self, ldapy):
@@ -56,7 +57,9 @@ class ChangeDN (Command):
             self.ldapy.changeDN (args[0])
         except AlreadyAtRoot as e:
             print e
-        except NoSuchDN as e:
+        except NoSuchObject as e:
+            print e
+        except NoSuchObjectInRoot as e:
             print e
 
     def complete (self, words):
@@ -112,7 +115,7 @@ class Cat (Command):
                     print "%s: %s" % (attribute, value)
         except AlreadyAtRoot as e:
             print e
-        except NoSuchDN as e:
+        except NoSuchObject as e:
             print e
 
     def complete (self, words):
@@ -190,7 +193,7 @@ Subcommands:
         try:
             self.ldapy.setAttribute (rdn, attribute,
                     newValue = newValue, oldValue = None)
-        except NoSuchDN as e:
+        except NoSuchObject as e:
             print e
 
     def delete (self, rdn, args):
@@ -205,7 +208,7 @@ Subcommands:
         try:
             self.ldapy.setAttribute (rdn, attribute,
                     oldValue = oldValue, newValue = None)
-        except NoSuchDN as e:
+        except NoSuchObject as e:
             print e
 
     def replace (self, rdn, args):
@@ -221,7 +224,7 @@ Subcommands:
         try:
             self.ldapy.setAttribute (rdn, attribute,
                     oldValue = oldValue, newValue = newValue)
-        except NoSuchDN as e:
+        except NoSuchObject as e:
             print e
 
 class Delete(Command):
@@ -239,7 +242,7 @@ class Delete(Command):
         relDN = args[0]
         try:
             self.ldapy.delete (relDN)
-        except NoSuchDN as e:
+        except NoSuchObject as e:
             print e
 
     _wrong_number_of_arguments = "%s has to be called with only one argument."

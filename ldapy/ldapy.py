@@ -17,34 +17,22 @@ from node import Node, NodeError
 import argparse
 import ldapurl
 import connection
+import exceptions
 import sys
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
 
-class NoSuchDN (Exception):
-    def __init__ (self, relDN, parent):
-        self.relDN = relDN
-        self.parent = parent
-
-    _no_such_DN_in_root = "No such root DN: %s"
-    _no_such_DN_in_parent = "No such DN: %s,%s"
-
-    def __str__ (self):
-        if self.parent:
-            return NoSuchDN._no_such_DN_in_parent % (self.relDN, self.parent)
-        else:
-            return NoSuchDN._no_such_DN_in_root % (self.relDN)
-
-class AlreadyAtRoot (Exception):
-    _already_at_root = "Already at root."
-
-    def __str__ (self):
-        return AlreadyAtRoot._already_at_root
 
 class LdapyError (Exception):
     def __str__ (self):
         return self.msg
+
+class AlreadyAtRoot (LdapyError):
+    def __init__ (self):
+        self.msg = self._already_at_root
+
+    _already_at_root = "Already at root."
 
 class SetAttributeError (LdapyError):
     def __init__ (self, msg):
@@ -90,7 +78,10 @@ class Ldapy:
             try:
                 return self._cwd.relativeChildren[relDN]
             except KeyError:
-                raise NoSuchDN (relDN, self.cwd)
+                if self.cwd:
+                    raise exceptions.NoSuchObject ("%s,%s" % (relDN, self.cwd))
+                else:
+                    raise exceptions.NoSuchObjectInRoot (relDN)
 
     def getAttributes (self, relDN):
         return self._resolveRelativeDN (relDN).attributes

@@ -2,7 +2,8 @@ import unittest
 import mock
 import configuration
 from ldapy.node import NodeError
-from ldapy.ldapy import Ldapy, NoSuchDN, AlreadyAtRoot, SetAttributeError, DeleteError
+from ldapy.ldapy import Ldapy, AlreadyAtRoot, SetAttributeError, DeleteError
+from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
 
 
 class BasicLdapyTests (unittest.TestCase):
@@ -161,10 +162,10 @@ class ErrorLdapyTests (unittest.TestCase):
 
         nonexistent = "dc=nonexistent"
 
-        with self.assertRaises(NoSuchDN) as received:
+        with self.assertRaises(NoSuchObjectInRoot) as received:
             ldapy.changeDN (nonexistent)
 
-        expected = NoSuchDN (nonexistent, None)
+        expected = NoSuchObjectInRoot (nonexistent)
         self.assertEqual (str(received.exception), str(expected))
 
     def test_change_DN_to_nonexistent_child (self):
@@ -172,11 +173,12 @@ class ErrorLdapyTests (unittest.TestCase):
             ldapy = Ldapy (self.con)
             ldapy.changeDN (p.root)
 
-            nonexistent = "ou=Foobar"
-            with self.assertRaises(NoSuchDN) as received:
-                ldapy.changeDN (nonexistent)
+            nonexistentRDN = "ou=Foobar"
+            nonexistent = "%s,%s" % (nonexistentRDN, p.root)
+            with self.assertRaises(NoSuchObject) as received:
+                ldapy.changeDN (nonexistentRDN)
 
-            expected = NoSuchDN (nonexistent, p.root)
+            expected = NoSuchObject (nonexistent)
             self.assertEqual (str(received.exception), str(expected))
 
     def test_up_one_level_too_far (self):
@@ -188,15 +190,16 @@ class ErrorLdapyTests (unittest.TestCase):
         expected = AlreadyAtRoot ()
         self.assertEqual (str(received.exception), str(expected))
 
-    def test_NoSuchDN_for_setAttribute (self):
+    def test_NoSuchObject_for_setAttribute (self):
         ldapy = self.getLdapyAtRoot()
         nonexistentRDN = "dc=nonexistent"
+        nonexistent = "%s,%s" % (nonexistentRDN, ldapy.cwd)
         attribute = "description"
 
-        with self.assertRaises(NoSuchDN) as received:
+        with self.assertRaises(NoSuchObject) as received:
             ldapy.setAttribute (nonexistentRDN, attribute)
 
-        expected = NoSuchDN (nonexistentRDN, ldapy.cwd)
+        expected = NoSuchObject (nonexistent)
         self.assertEqual (str(received.exception), str(expected))
 
     def test_setAttribute_errors_are_propagated (self):
@@ -214,14 +217,15 @@ class ErrorLdapyTests (unittest.TestCase):
             self.assertEqual (received.exception.msg, testMessage)
             self.assertEqual (str(received.exception), testMessage)
 
-    def test_NoSuchDN_for_delete (self):
+    def test_NoSuchObject_for_delete (self):
         ldapy = self.getLdapyAtRoot()
         nonexistentRDN = "dc=nonexistent"
+        nonexistent = "%s,%s" % (nonexistentRDN, ldapy.cwd)
 
-        with self.assertRaises(NoSuchDN) as received:
+        with self.assertRaises(NoSuchObject) as received:
             ldapy.delete (nonexistentRDN)
 
-        expected = NoSuchDN (nonexistentRDN, ldapy.cwd)
+        expected = NoSuchObject (nonexistent)
         self.assertEqual (str(received.exception), str(expected))
 
     def test_delete_errors_are_propagated (self):

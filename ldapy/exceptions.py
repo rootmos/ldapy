@@ -37,6 +37,15 @@ class NoSuchObject (Exception):
     def __str__ (self):
         return self._dn_does_not_exist % self.dn
 
+class NoSuchObjectInRoot (Exception):
+    def __init__ (self, dn):
+        self.dn = dn
+
+    _no_such_DN_in_root = "No such root DN: %s"
+
+    def __str__ (self):
+        return self._no_such_DN_in_root % self.dn
+
 class AlreadyExists (Exception):
     def __init__ (self, dn):
         self.dn = dn
