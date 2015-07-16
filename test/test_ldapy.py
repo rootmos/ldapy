@@ -89,6 +89,16 @@ class BasicLdapyTests (unittest.TestCase):
 
             deleteMock.assert_called_once_with (child)
 
+    def test_add_calls_add_on_node (self):
+        ldapy = self.getLdapyAtRoot()
+        with mock.patch('ldapy.node.Node.add', autospec=True) as addMock:
+            cwd = ldapy._resolveRelativeDN (".")
+            rdn = "cn=Foo"
+            attr = {"objectClass": "Bar"}
+            ldapy.add (rdn, attr)
+
+            addMock.assert_called_once_with (cwd, rdn, attr)
+
 
 class ChildCompleter (unittest.TestCase):
     def setUp (self):

@@ -112,6 +112,8 @@ class Ldapy:
     def completeChild (self, text):
         return [ i.relativeDN () for i in self._cwd.children if i.dn.startswith (text)]
 
+    def add (self, rdn, attr):
+        self._cwd.add (rdn, attr)
 
     _neither_host_nor_uri_given = "Must specify either a host (--host) or an URI."
     _both_host_and_uri_given = "Both host and URI specified, only one allowed."
