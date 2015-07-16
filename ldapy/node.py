@@ -50,12 +50,12 @@ class Node:
         # If we were'n given a dn, then we populate the Node with the roots
         if not self.dn:
             logger.debug ("Populating root node with roots: %s" % self.con.roots)
-            self._children = []
+            self._children = {}
             for root in self.con.roots:
                 try:
                     node = Node (self.con, root)
                     node.parent = self
-                    self._children.append (node)
+                    self._children[root] = node
                 except exceptions.NoSuchObject as e:
                     logger.error (e)
                     logger.error ("Skipping root %s" % root)
@@ -146,35 +146,46 @@ class Node:
             logger.warning ("Trying to delete non-existent Node: %s" % self.dn)
 
         # If this Node has a parent, remove this Node from its list
-        if self.parent:
-            self.parent.children.remove (self)
+        key = self.relativeDN()
+        if self.parent and key in self.parent._children:
+            del self.parent._children[key]
+
+    def add (self, rdn, attr):
+        dn = "%s,%s" % (rdn, self.dn)
+        self.con.add (dn, attr)
+        self._insertChild (dn)
 
     @property
     def children (self):
-        if self._children is None:
-            self._children = []
-            children = self.con.search (self.dn, connection.scopeOneLevel)
-            for child in children:
-                node = Node (self.con, child[0], child[1])
-                node.parent = self
-                self._children.append (node)
-            logger.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
-
-        return self._children
+        self._populateChildren()
+        return self._children.values()
 
     @property
     def relativeChildren (self):
-        if self._relativeChildren is None:
-            self._relativeChildren = {}
-            for child in self.children:
-                self._relativeChildren[child.relativeDN()] = child
+        self._populateChildren()
+        return self._children
 
-        return self._relativeChildren
+    def _populateChildren (self):
+        if self._children is None:
+            self._children = {}
+            children = self.con.search (self.dn, connection.scopeOneLevel)
+            for child in children:
+                self._insertChild (child[0], child[1])
+
+            logger.debug ("Populated DN=[%s] with children: %s" % (self.dn, self._children))
+
+    def _insertChild (self, dn, attr = None):
+        node = Node (self.con, dn, attr)
+        node.parent = self
+        self._children[node.relativeDN()] = node
 
 
     def relativeDN (self, to = None):
         if not to:
-            to = self.parent
+            if self.parent:
+                to = self.parent
+            else:
+                to = ""
 
         toDN = connection.str2dn (str(to))
         myDN = connection.str2dn (self.dn)

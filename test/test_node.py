@@ -329,6 +329,50 @@ class DeleteTests (unittest.TestCase):
 
             node.delete()
 
+class AddTests (unittest.TestCase):
+    def setUp (self):
+        self.con = configuration.getConnection ()
+
+    def test_add_delegates (self):
+        with configuration.provision() as p:
+            c = p.container ()
+            node = Node (self.con, c.dn)
+
+            rdn = "cn=Foo"
+            dn = "%s,%s" % (rdn, c.dn)
+            attr = {"objectClass": "Bar"}
+
+            # Prohibit the addition of the fake new object
+            node._insertChild = mock.create_autospec(node._insertChild)
+
+            with mock.patch ("ldapy.connection.Connection.add", autospec=True) as add_mock:
+                node.add (rdn, attr)
+
+            add_mock.assert_called_once_with (self.con, dn, attr)
+
+    def test_add_successful (self):
+        with configuration.provision() as p:
+            c = p.container ()
+            node = Node (self.con, c.dn)
+
+            rdn = "cn=test_add_successful"
+            dn = "%s,%s" % (rdn, c.dn)
+            attr = {"objectClass": "organizationalRole"}
+
+            # Pre-condition, new object does not exist
+            self.assertFalse(p.exists(dn))
+            self.assertNotIn(rdn, node.relativeChildren)
+
+            try:
+                node.add (rdn, attr)
+
+                # Check that the new object exists
+                self.assertTrue(p.exists(dn))
+                self.assertIn(rdn, node.relativeChildren)
+            finally:
+                # Cleanup
+                p.delete (dn)
+
 class NodeErrors (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
