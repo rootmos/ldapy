@@ -253,3 +253,28 @@ will be deleted recusively as well.
 
     def usage (self, words):
         print Delete._usage % self.name
+
+class Add(Command):
+    def __init__ (self, ldapy):
+        self.name = "add"
+        Command.__init__ (self, self.name)
+        self.ldapy = ldapy
+
+    _usage = """Usage: %s relativeDN attributes
+Adds an object with relativeDN and attributes to the current object.
+"""
+    _wrong_number_of_arguments = "%s has to be called with exactly two arguments."
+
+    def usage (self, words):
+        print Add._usage % self.name
+
+    def __call__ (self, args):
+        if len(args) != 2:
+            print Add._wrong_number_of_arguments % self.name
+            self.usage(args)
+            return
+
+        rdn = args[0]
+        attrs = args[1]
+
+        self.ldapy.add (rdn, attrs)

@@ -2,7 +2,7 @@ import configuration
 from ldapy.ldapy import Ldapy, AlreadyAtRoot
 import unittest
 import mock
-from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat, Modify, Delete
+from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat, Modify, Delete, Add
 from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
 
 def getLdapy ():
@@ -639,3 +639,58 @@ class DeleteTests (unittest.TestCase):
         msg = NoSuchObject._dn_does_not_exist % nonexistent
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+class AddTests (unittest.TestCase):
+    def getLdapyAtRoot (self):
+        with configuration.provision() as p:
+            ldapy = getLdapy ()
+            self.root = p.root
+            ldapy.changeDN (self.root)
+            return ldapy
+
+    def test_usage (self):
+        cmd = Add (self.getLdapyAtRoot())
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd.usage ([])
+
+        msg = Add._usage % "add"
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_successful_add_calls_ldapy_add (self):
+        ldapy = self.getLdapyAtRoot()
+        cmd = Add (ldapy)
+
+        ldapy.add = mock.create_autospec (ldapy.add)
+        relDN = "dc=Foo"
+        attr = {"objectClass": "Bar"}
+        cmd([relDN, attr])
+        ldapy.add.assert_called_once_with (relDN, attr)
+
+    def test_too_few_arguments_prints_error_calls_usage (self):
+        cmd = Add (self.getLdapyAtRoot())
+
+        cmd.usage = mock.create_autospec(cmd.usage)
+        args = []
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd(args)
+
+        msg = Add._wrong_number_of_arguments % cmd.name
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+        cmd.usage.assert_called_once_with (args)
+
+    def test_too_many_arguments_prints_error_calls_usage (self):
+        cmd = Add (self.getLdapyAtRoot())
+
+        cmd.usage = mock.create_autospec(cmd.usage)
+        args = ["rdn", "attrs", "too_many!"]
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd(args)
+
+        msg = Add._wrong_number_of_arguments % cmd.name
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+        cmd.usage.assert_called_once_with (args)
