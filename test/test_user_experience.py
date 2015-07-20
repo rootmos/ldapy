@@ -7,17 +7,53 @@ import sys
 from ldapy.connection import Connection
 import configuration
 
-def create_ldapy_process (args):
-    pwd = os.path.dirname (__file__)
-    script = os.path.join (pwd, "../scripts/ldapy")
-    coverage = ["coverage", "run", "-p", "--source", os.environ["NOSE_COVER_PACKAGE"], script]
-
-    return pexpect.spawn (" ".join (coverage + args), env = {"PYTHONPATH" : ":".join(sys.path)})
-
 uri = configuration.uri
 host = configuration.host
 bind_dn = configuration.admin
 password = configuration.admin_password
+
+class spawn_ldapy (pexpect.spawn):
+    def __init__ (self, args = None, root = None, wait_for_prompt=True):
+        pwd = os.path.dirname (__file__)
+        script = os.path.join (pwd, "../scripts/ldapy")
+        coverage = ["coverage", "run", "-p", "--source", os.environ["NOSE_COVER_PACKAGE"], script]
+
+        if not args:
+            args = ["-D", bind_dn, "-w", password, uri ]
+
+        pexpect.spawn.__init__ (self, " ".join (coverage + args),
+                env = {"PYTHONPATH" : ":".join(sys.path)})
+
+        if root:
+            self.expect_prompt()
+            self.sendline ("cd %s" % root)
+
+        if wait_for_prompt:
+            self.expect_prompt()
+
+    def expect_prompt (self):
+        self.expect ("\$", timeout=5)
+        return self.before.splitlines()
+
+    def assert_exitstatus (self, status):
+        if self.isalive():
+            self.wait()
+
+        assert self.exitstatus == status
+
+    def send_command (self, command):
+        self.sendline (command)
+        self.expect ("\n")
+        return self.expect_prompt ()
+
+    def __enter__ (self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if self.isalive():
+            self.sendline ("quit")
+            self.assert_exitstatus (0)
+        return False
 
 class BasicConnectivity (unittest.TestCase):
 
@@ -31,51 +67,82 @@ class BasicConnectivity (unittest.TestCase):
         self.execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, "-H", host])
 
     def execute_with_args_ls_and_expect_root (self, args):
-        with configuration.provision() as p:
-            ldapy = create_ldapy_process (args)
-
-            ldapy.expect ("\$")
+        with configuration.provision() as p, spawn_ldapy (args=args) as ldapy:
             ldapy.sendline ("ls")
             ldapy.expect (p.root)
-
-            ldapy.expect ("\$")
-            ldapy.sendline ("quit")
-
-            ldapy.wait ()
-
-            assert ldapy.exitstatus == 0
+            ldapy.expect_prompt ()
 
 class FailedConnectionErrors (unittest.TestCase):
     def test_unknow_host (self):
         bad_uri = "ldap://foobar"
-        ldapy = create_ldapy_process ([bad_uri])
-        ldapy.expect (Connection._connection_error_msg % bad_uri)
-        ldapy.wait ()
-        assert ldapy.exitstatus == 1
+        args = [bad_uri]
+        with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
+            ldapy.expect (Connection._connection_error_msg % bad_uri)
+            ldapy.assert_exitstatus (1)
 
     def test_auth_failed (self):
-        ldapy = create_ldapy_process ([uri, "-D", bind_dn, "-w", "wrong"])
-        ldapy.expect (Connection._bad_auth_error_msg % bind_dn)
-        ldapy.wait ()
-        assert ldapy.exitstatus == 1
+        args = [uri, "-D", bind_dn, "-w", "wrong"]
+        with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
+            ldapy.expect (Connection._bad_auth_error_msg % bind_dn)
+            ldapy.assert_exitstatus (1)
 
     def test_auth_with_no_password (self):
-        ldapy = create_ldapy_process ([uri, "-D", bind_dn])
-        ldapy.expect (Connection._server_unwilling)
-        ldapy.wait ()
-        assert ldapy.exitstatus == 1
+        args = [uri, "-D", bind_dn]
+        with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
+            ldapy.expect (Connection._server_unwilling)
+            ldapy.assert_exitstatus (1)
 
 class LoggingLevels (unittest.TestCase):
     def test_no_logging_when_not_asked (self):
-        ldapy = create_ldapy_process ([uri])
-        with self.assertRaises (pexpect.TIMEOUT):
-            ldapy.expect (["INFO", "DEBUG"], timeout=1)
+        args = [uri]
+        with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
+            with self.assertRaises (pexpect.TIMEOUT):
+                ldapy.expect (["INFO", "DEBUG"], timeout=1)
 
     def test_verbose_info (self):
-        ldapy = create_ldapy_process (["-v", uri])
-        ldapy.expect ("INFO")
+        args = ["-v", uri]
+        with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
+            ldapy.expect ("INFO")
 
     def test_debug_info (self):
-        ldapy = create_ldapy_process (["-d", uri])
-        ldapy.expect ("DEBUG")
+        args = ["-d", uri]
+        with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
+            ldapy.expect ("DEBUG")
 
+class NavigationUseCases (unittest.TestCase):
+    def test_cd_and_pwd (self):
+        with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
+            c = p.container ()
+
+            lines = ldapy.send_command ("pwd")
+            self.assertListEqual([p.root], lines)
+
+            ldapy.send_command ("cd %s" % c.rdn)
+            lines = ldapy.send_command ("pwd")
+            self.assertListEqual([c.dn], lines)
+
+            ldapy.send_command ("cd .")
+            lines = ldapy.send_command ("pwd")
+            self.assertListEqual([c.dn], lines)
+
+            ldapy.send_command ("cd ..")
+            lines = ldapy.send_command ("pwd")
+            self.assertListEqual([p.root], lines)
+
+class CatUseCases (unittest.TestCase):
+    def test_cat_contains_attributes (self):
+        with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
+            l = p.container ()
+
+            lines = ldapy.send_command ("cat %s" % l.rdn)
+
+            foundName = False
+            foundObjectClass = False
+            for line in lines:
+                if l.dnComponent in line and l.name in line:
+                    foundName = True
+                elif "objectClass" in line and l.objectClass in line:
+                    foundObjectClass = True
+
+            self.assertTrue (foundName)
+            self.assertTrue (foundObjectClass)
