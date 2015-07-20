@@ -132,10 +132,22 @@ class NavigationUseCases (unittest.TestCase):
 class CatUseCases (unittest.TestCase):
     def test_cat_contains_attributes (self):
         with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
-            l = p.container ()
+            c = p.container ()
+            l = p.leaf (c)
+            ldapy.send_command ("cd %s" % c.rdn)
+
+            lines = ldapy.send_command ("cat .")
+            foundName = False
+            foundObjectClass = False
+            for line in lines:
+                if c.dnComponent in line and c.name in line:
+                    foundName = True
+                elif "objectClass" in line and c.objectClass in line:
+                    foundObjectClass = True
+            self.assertTrue (foundName)
+            self.assertTrue (foundObjectClass)
 
             lines = ldapy.send_command ("cat %s" % l.rdn)
-
             foundName = False
             foundObjectClass = False
             for line in lines:
@@ -143,6 +155,5 @@ class CatUseCases (unittest.TestCase):
                     foundName = True
                 elif "objectClass" in line and l.objectClass in line:
                     foundObjectClass = True
-
             self.assertTrue (foundName)
             self.assertTrue (foundObjectClass)
