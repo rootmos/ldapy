@@ -673,6 +673,22 @@ class AddTests (unittest.TestCase):
 
         ldapy.add.assert_called_once_with (relDN, attrsDict)
 
+    def test_successful_add_calls_ldapy_add_with_tricky_name (self):
+        ldapy = self.getLdapyAtRoot()
+        cmd = Add (ldapy)
+
+        ldapy.add = mock.create_autospec (ldapy.add)
+
+        relDN = "dc=Foo"
+        attrsDict = {"objectClass": "\"Bar Baz\"", "dc": "Tricky:Name"}
+
+        attrs = []
+        for key, value in attrsDict.iteritems():
+            attrs.append ("%s:%s" % (key, value))
+        cmd([relDN] + attrs)
+
+        ldapy.add.assert_called_once_with (relDN, attrsDict)
+
     def test_too_few_arguments_prints_error_calls_usage (self):
         cmd = Add (self.getLdapyAtRoot())
 
@@ -682,6 +698,21 @@ class AddTests (unittest.TestCase):
             cmd(args)
 
         msg = Add._wrong_number_of_arguments % cmd.name
+        expect_calls = [mock.call(msg), mock.call("\n")]
+        self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+        cmd.usage.assert_called_once_with (args)
+
+    def test_attribute_malformed_prints_error_calls_usage (self):
+        cmd = Add (self.getLdapyAtRoot())
+
+        cmd.usage = mock.create_autospec(cmd.usage)
+        malformed = "malformed"
+        args = ["dc=Foo", "a:b", malformed, "c:d"]
+        with mock.patch('sys.stdout.write') as print_mock:
+            cmd(args)
+
+        msg = Add._malformed_attribute % malformed
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 

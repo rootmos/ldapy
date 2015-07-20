@@ -264,6 +264,7 @@ class Add(Command):
 Adds an object with relativeDN and attributes to the current object.
 """
     _wrong_number_of_arguments = "%s has to be called with at least two arguments."
+    _malformed_attribute = "Malformed attribute: %s"
 
     def usage (self, words):
         print Add._usage % self.name
@@ -277,7 +278,12 @@ Adds an object with relativeDN and attributes to the current object.
         rdn = args[0]
         attrs = {}
         for raw in args[1:]:
-            pair = raw.split (":")
+            pair = raw.split (":", 1)
+            if len(pair) != 2:
+                print Add._malformed_attribute % raw
+                self.usage(args)
+                return
+
             attr = pair[0]
             value = pair[1]
             attrs[attr] = value
