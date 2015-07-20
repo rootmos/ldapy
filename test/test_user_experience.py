@@ -14,6 +14,10 @@ host = configuration.host
 bind_dn = configuration.admin
 password = configuration.admin_password
 
+def random_value (N=20):
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(N))
+
+
 class spawn_ldapy (pexpect.spawn):
     def __init__ (self, args = None, root = None, wait_for_prompt=True):
         pwd = os.path.dirname (__file__)
@@ -178,16 +182,13 @@ class ModifyUseCases (unittest.TestCase):
 
         return found
 
-    def random_value (self):
-        return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(30))
-
     def test_modify (self):
         with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
             l = p.leaf ()
             attribute = l.anAttribute
-            value1_1 = self.random_value()
-            value1_2 = self.random_value()
-            value2 = self.random_value()
+            value1_1 = random_value()
+            value1_2 = random_value()
+            value2 = random_value()
 
             # Verify attribute does not exist
             self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute))
@@ -236,3 +237,36 @@ class DeleteUseCases (unittest.TestCase):
 
             self.assertFalse(p.exists (l1))
             self.assertTrue(p.exists (l2))
+
+
+class AddUseCases (unittest.TestCase):
+    def test_add (self):
+        with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
+            c = p.container ()
+            ldapy.send_command ("cd %s" % c.rdn)
+
+            name = random_value()
+            dnComponent = "cn"
+            objectClass = "organizationalRole"
+            rdn = "%s=%s" % (dnComponent, name)
+            dn = "%s,%s" % (rdn, c.dn)
+
+            anAttribute = "description"
+            anAttributeValue = random_value()
+
+            fmt = "%s:%s"
+            attributesList = [fmt % (dnComponent, name),
+                              fmt % ("objectClass", objectClass),
+                              fmt % (anAttribute, anAttributeValue)]
+            attributes = " ".join (attributesList)
+
+            try:
+                self.assertFalse(p.exists(dn))
+                ldapy.send_command ("add %s %s" % (rdn, attributes))
+                self.assertTrue(p.exists(dn))
+                self.assertEquals([name], p.attribute (dn, dnComponent))
+                self.assertEquals([objectClass], p.attribute (dn, "objectClass"))
+                self.assertEquals([anAttributeValue], p.attribute (dn, anAttribute))
+            finally:
+                p.delete (dn)
+

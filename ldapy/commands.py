@@ -260,21 +260,26 @@ class Add(Command):
         Command.__init__ (self, self.name)
         self.ldapy = ldapy
 
-    _usage = """Usage: %s relativeDN attributes
+    _usage = """Usage: %s relativeDN (attribute:value)+
 Adds an object with relativeDN and attributes to the current object.
 """
-    _wrong_number_of_arguments = "%s has to be called with exactly two arguments."
+    _wrong_number_of_arguments = "%s has to be called with at least two arguments."
 
     def usage (self, words):
         print Add._usage % self.name
 
     def __call__ (self, args):
-        if len(args) != 2:
+        if len(args) < 2:
             print Add._wrong_number_of_arguments % self.name
             self.usage(args)
             return
 
         rdn = args[0]
-        attrs = args[1]
+        attrs = {}
+        for raw in args[1:]:
+            pair = raw.split (":")
+            attr = pair[0]
+            value = pair[1]
+            attrs[attr] = value
 
         self.ldapy.add (rdn, attrs)

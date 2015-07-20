@@ -662,10 +662,16 @@ class AddTests (unittest.TestCase):
         cmd = Add (ldapy)
 
         ldapy.add = mock.create_autospec (ldapy.add)
+
         relDN = "dc=Foo"
-        attr = {"objectClass": "Bar"}
-        cmd([relDN, attr])
-        ldapy.add.assert_called_once_with (relDN, attr)
+        attrsDict = {"objectClass": "Bar", "dc": "Foo"}
+
+        attrs = []
+        for key, value in attrsDict.iteritems():
+            attrs.append ("%s:%s" % (key, value))
+        cmd([relDN] + attrs)
+
+        ldapy.add.assert_called_once_with (relDN, attrsDict)
 
     def test_too_few_arguments_prints_error_calls_usage (self):
         cmd = Add (self.getLdapyAtRoot())
@@ -681,16 +687,3 @@ class AddTests (unittest.TestCase):
 
         cmd.usage.assert_called_once_with (args)
 
-    def test_too_many_arguments_prints_error_calls_usage (self):
-        cmd = Add (self.getLdapyAtRoot())
-
-        cmd.usage = mock.create_autospec(cmd.usage)
-        args = ["rdn", "attrs", "too_many!"]
-        with mock.patch('sys.stdout.write') as print_mock:
-            cmd(args)
-
-        msg = Add._wrong_number_of_arguments % cmd.name
-        expect_calls = [mock.call(msg), mock.call("\n")]
-        self.assertListEqual (print_mock.call_args_list, expect_calls)
-
-        cmd.usage.assert_called_once_with (args)
