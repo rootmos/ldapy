@@ -221,3 +221,18 @@ class ModifyUseCases (unittest.TestCase):
             # Verify we have nothing left
             self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute))
 
+class DeleteUseCases (unittest.TestCase):
+    def test_delete (self):
+        with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
+            c = p.container ()
+            l1 = p.leaf (c)
+            l2 = p.leaf (c)
+            ldapy.send_command ("cd %s" % c.rdn)
+
+            self.assertTrue(p.exists (l1))
+            self.assertTrue(p.exists (l2))
+
+            ldapy.send_command ("delete %s" % l1.rdn)
+
+            self.assertFalse(p.exists (l1))
+            self.assertTrue(p.exists (l2))
