@@ -43,16 +43,28 @@ class Parser (unittest.TestCase):
 
     def test_arguments (self):
         cmd = Command ("cmd")
-        cmd.__call__ = mock.MagicMock()
+        cmd.__call__ = mock.create_autospec (cmd.__call__)
 
         cli = Commandline ([cmd])
 
-        cmdline = "cmd a \"b c\""
-        args = ["a", "b c"]
+        cmdline = "cmd a  b\t c"
+        args = ["a", "b", "c"]
 
         cli.parse_and_dispatch (cmdline)
+        cmd.__call__.assert_called_once_with (args)
 
-        cmd.__call__.assert_called_with (args)
+    def test_quoted_arguments (self):
+        cmd = Command ("cmd")
+        cmd.__call__ = mock.create_autospec(cmd.__call__)
+
+        cli = Commandline ([cmd])
+
+        args =       ["a", "b\"c\\\" d\"", "'e\" f'g", "h"]
+        parsedArgs = ["a", "bc\" d",     "e\" fg",   "h"]
+        cmdline = "cmd %s" % " ".join(args)
+
+        cli.parse_and_dispatch (cmdline)
+        cmd.__call__.assert_called_once_with (parsedArgs)
 
     def test_help_option (self):
         cmd = Command ("cmd")
