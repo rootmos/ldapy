@@ -101,6 +101,8 @@ class Connection:
             ldif = ldap.modlist.modifyModlist (oldAttrs, newAttrs)
             logger.debug ("LdapModify: dn=%s, ldif:\n%s" % (dn, ldif))
             self._ldap.modify_s (dn, ldif)
+        except ldap.UNDEFINED_TYPE as e:
+            raise exceptions.UndefinedType.convert (e)
         except ldap.LDAPError as e:
             raise exceptions.LdapError (e)
 
@@ -120,6 +122,8 @@ class Connection:
             raise exceptions.NoSuchObject.convert (dn, e)
         except ldap.ALREADY_EXISTS as e:
             raise exceptions.AlreadyExists.convert (dn, e)
+        except ldap.UNDEFINED_TYPE as e:
+            raise exceptions.UndefinedType.convert (e)
         except ldap.LDAPError as e:
             raise exceptions.LdapError (e)
 

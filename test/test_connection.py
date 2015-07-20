@@ -1,5 +1,5 @@
 from ldapy.connection import Connection, ConnectionError, scopeBase
-from ldapy.exceptions import LdapError, NoSuchObject, AlreadyExists
+from ldapy.exceptions import LdapError, NoSuchObject, AlreadyExists, UndefinedType
 import unittest
 import mock
 import ldap
@@ -128,6 +128,16 @@ class AddTests (unittest.TestCase):
                 self.con.add (l.dn, attr)
             
             self.assertEqual (received.exception.dn, l.dn)
+
+    def test_add_with_unknown_attribute (self):
+        dn = "ou=test_add_with_unknown_attribute"
+
+        unknown = "foo"
+        attr = {unknown: "bar"}
+        with self.assertRaises(UndefinedType) as received:
+            self.con.add (dn, attr)
+
+        self.assertIn (unknown, str(received.exception.info))
 
     def test_add_passes_on_ldap_errors (self):
         expect = ldap.OTHER("Foobar")

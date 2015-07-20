@@ -1,5 +1,5 @@
 from ldapy.node import Node, NodeError
-from ldapy.exceptions import DNDecodingError, NoSuchObject
+from ldapy.exceptions import DNDecodingError, NoSuchObject, UndefinedType
 import unittest
 import mock
 import configuration
@@ -142,6 +142,19 @@ class ModifyAttributesTests (unittest.TestCase):
                                  sorted(p.attribute(l, attribute)))
             self.assertListEqual(sorted([newValue, oldValue]),
                                  sorted(node.attributes[attribute]))
+
+    def test_add_undefined_attribute (self):
+        with configuration.provision() as p:
+            attribute = "foo"
+            newValue = "bar"
+
+            l = p.leaf()
+
+            node = Node (self.con, l.dn)
+            with self.assertRaises (UndefinedType) as received:
+                node.setAttribute (attribute, newValue)
+
+            self.assertIn (attribute, str(received.exception))
 
     def test_replace_non_existent_value (self):
         with configuration.provision() as p:

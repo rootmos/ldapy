@@ -172,7 +172,6 @@ class BasicFunctionality (unittest.TestCase):
         expect_calls = [mock.call(error), mock.call("\n")]
         assert print_mock.call_args_list == expect_calls
 
-
 def create_sut_process (cls, method):
     pwd = os.path.dirname (__file__)
     script = os.path.join (pwd, "dispatch.py")

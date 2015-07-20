@@ -54,6 +54,17 @@ class AlreadyExists (Exception):
     def convert (dn, exception):
         return AlreadyExists (dn)
 
+class UndefinedType (Exception):
+    def __init__ (self, info):
+        self.info = info
+
+    def __str__ (self):
+        return self.info
+
+    @staticmethod
+    def convert (exception):
+        return UndefinedType (exception.message["info"])
+
 class DNDecodingError (Exception):
     def __init__ (self, string):
         self.string = string
