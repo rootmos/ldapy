@@ -21,7 +21,7 @@ class LdapObject(object):
         yield
 
 class Container(LdapObject):
-    def __init__(self, parent, name, objectClass, dnComponent, attr):
+    def __init__(self, parent, name, objectClass, dnComponent, attr, anAttribute):
         if name:
             self.name = name
         else:
@@ -29,6 +29,7 @@ class Container(LdapObject):
 
         self.objectClass = objectClass
         self.dnComponent = dnComponent
+        self.anAttribute = anAttribute
         self.parent = parent
         self.rdn = "%s=%s" % (dnComponent, self.name)
         self.dn = "%s,%s" % (self.rdn, parent)
@@ -49,7 +50,7 @@ class Container(LdapObject):
         return self.children.__iter__()
 
 class Leaf(LdapObject):
-    def __init__(self, parent, name, objectClass, dnComponent, attr):
+    def __init__(self, parent, name, objectClass, dnComponent, attr, anAttribute):
         if name:
             self.name = name
         else:
@@ -57,6 +58,7 @@ class Leaf(LdapObject):
 
         self.objectClass = objectClass
         self.dnComponent = dnComponent
+        self.anAttribute = anAttribute
         self.parent = parent
         self.rdn = "%s=%s" % (dnComponent, self.name)
         self.dn = "%s,%s" % (self.rdn, parent)
@@ -102,19 +104,25 @@ class Provisioning:
             return False
 
 
-    def container(self, parent = None, name = None, objectClass = "organizationalUnit", dnComponent="ou", attr = None):
+    def container(self, parent = None, name = None,
+            objectClass = "organizationalUnit", dnComponent="ou",
+            anAttribute = "description", attr = None):
         if not parent:
             parent = self.root
         
-        c = Container(parent, name=name, attr=attr, objectClass = objectClass, dnComponent=dnComponent)
+        c = Container(parent, name=name, attr=attr, objectClass = objectClass,
+                dnComponent = dnComponent, anAttribute = anAttribute)
         self.add(c)
         return c
 
-    def leaf(self, parent = None, name = None, objectClass = "organizationalRole", dnComponent="cn", attr = None):
+    def leaf(self, parent = None, name = None,
+            objectClass = "organizationalRole", dnComponent="cn",
+            anAttribute = "description", attr = None):
         if not parent:
             parent = self.root
         
-        l = Leaf(parent, name=name, attr=attr, objectClass=objectClass, dnComponent=dnComponent)
+        l = Leaf(parent, name=name, attr=attr, objectClass=objectClass,
+                dnComponent=dnComponent, anAttribute=anAttribute)
         self.add(l)
         return l
 

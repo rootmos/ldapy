@@ -6,6 +6,8 @@ import os
 import sys
 from ldapy.connection import Connection
 import configuration
+import random
+import string
 
 uri = configuration.uri
 host = configuration.host
@@ -42,9 +44,12 @@ class spawn_ldapy (pexpect.spawn):
         assert self.exitstatus == status
 
     def send_command (self, command):
+        print "Sending command: ", command
         self.sendline (command)
         self.expect ("\n")
-        return self.expect_prompt ()
+        lines = self.expect_prompt ()
+        print "Received lines: ", lines
+        return lines
 
     def __enter__ (self):
         return self
@@ -157,3 +162,62 @@ class CatUseCases (unittest.TestCase):
                     foundObjectClass = True
             self.assertTrue (foundName)
             self.assertTrue (foundObjectClass)
+
+class ModifyUseCases (unittest.TestCase):
+    def verify_attribute (self, ldapy, rdn, attribute, value = None):
+        lines = ldapy.send_command ("cat %s" % rdn)
+
+        found = False
+        for line in lines:
+            if attribute in line:
+                if value is not None:
+                    if value in line:
+                        found = True
+                else:
+                    found = True
+
+        return found
+
+    def random_value (self):
+        return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(30))
+
+    def test_modify (self):
+        with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
+            l = p.leaf ()
+            attribute = l.anAttribute
+            value1_1 = self.random_value()
+            value1_2 = self.random_value()
+            value2 = self.random_value()
+
+            # Verify attribute does not exist
+            self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute))
+
+            # Add the first value
+            ldapy.send_command ("modify %s add %s %s" % (l.rdn, attribute, value1_1))
+            self.assertTrue(self.verify_attribute (ldapy, l.rdn, attribute, value = value1_1))
+            self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute, value = value2))
+
+            # Add the second value
+            ldapy.send_command ("modify %s add %s %s" % (l.rdn, attribute, value2))
+            self.assertTrue(self.verify_attribute (ldapy, l.rdn, attribute, value = value1_1))
+            self.assertTrue(self.verify_attribute (ldapy, l.rdn, attribute, value = value2))
+
+            # Replace the first value
+            ldapy.send_command ("modify %s replace %s %s %s" % (l.rdn, attribute, value1_1, value1_2))
+            self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute, value = value1_1))
+            self.assertTrue(self.verify_attribute (ldapy, l.rdn, attribute, value = value1_2))
+            self.assertTrue(self.verify_attribute (ldapy, l.rdn, attribute, value = value2))
+
+            # Delete the first value
+            ldapy.send_command ("modify %s delete %s %s" % (l.rdn, attribute, value1_2))
+            self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute, value = value1_2))
+            self.assertTrue(self.verify_attribute (ldapy, l.rdn, attribute, value = value2))
+
+            # Delete the second value
+            ldapy.send_command ("modify %s delete %s %s" % (l.rdn, attribute, value2))
+            self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute, value = value1_2))
+            self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute, value = value2))
+
+            # Verify we have nothing left
+            self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute))
+

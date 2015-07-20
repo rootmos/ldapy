@@ -14,6 +14,7 @@
 # along with ldapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import ldap
+import ldap.modlist
 import sys
 import exceptions
 
