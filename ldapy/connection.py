@@ -103,6 +103,8 @@ class Connection:
             self._ldap.modify_s (dn, ldif)
         except ldap.UNDEFINED_TYPE as e:
             raise exceptions.UndefinedType.convert (e)
+        except ldap.TYPE_OR_VALUE_EXISTS as e:
+            raise exceptions.TypeOrValueExists.convert (e, dn, newAttrs)
         except ldap.LDAPError as e:
             raise exceptions.LdapError (e)
 
@@ -124,6 +126,8 @@ class Connection:
             raise exceptions.AlreadyExists.convert (dn, e)
         except ldap.UNDEFINED_TYPE as e:
             raise exceptions.UndefinedType.convert (e)
+        except ldap.TYPE_OR_VALUE_EXISTS as e:
+            raise exceptions.TypeOrValueExists.convert (e, dn, attrs)
         except ldap.LDAPError as e:
             raise exceptions.LdapError (e)
 

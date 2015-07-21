@@ -83,6 +83,9 @@ class Provisioning:
     
     def delete(self, dn):
         try:
+            results = self.ldap.search_s(str(dn), ldap.SCOPE_BASE)
+            print "DEBUG: Deleting object %s: %s" % (dn, results)
+
             self.ldap.delete_s(str(dn))
         except ldap.NO_SUCH_OBJECT:
             print "WARNING: %s already deleted" % dn

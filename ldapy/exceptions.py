@@ -65,6 +65,18 @@ class UndefinedType (Exception):
     def convert (exception):
         return UndefinedType (exception.message["info"])
 
+class TypeOrValueExists (Exception):
+    def __init__ (self, dn, attributes):
+        self.attributes = attributes
+        self.dn = dn
+
+    def __str__ (self):
+        return "Type or value exists (dn:%s) while setting attributes: %s" % (self.dn, self.attributes)
+
+    @staticmethod
+    def convert (exception, dn, attributes):
+        return TypeOrValueExists (dn, attributes)
+
 class DNDecodingError (Exception):
     def __init__ (self, string):
         self.string = string

@@ -1,5 +1,5 @@
 from ldapy.connection import Connection, ConnectionError, scopeBase
-from ldapy.exceptions import LdapError, NoSuchObject, AlreadyExists, UndefinedType
+from ldapy.exceptions import LdapError, NoSuchObject, AlreadyExists, UndefinedType, TypeOrValueExists
 import unittest
 import mock
 import ldap
@@ -147,6 +147,26 @@ class AddTests (unittest.TestCase):
 
         self.assertEqual (str(expect), str(received.exception))
 
+    def test_add_with_duplicate_attribute_value (self):
+        with configuration.provision() as p:
+            c = p.container()
+
+            name = "test_add_with_duplicate_attribute_value"
+            objectClass = "organizationalRole"
+            dnComponent = "cn"
+            attribute = "description"
+            value = "foobar"
+
+            dn = "%s=%s,%s" % (dnComponent, name, c.dn)
+
+            attrs = {"objectClass": objectClass, dnComponent: name,
+                     attribute: [value, value]}
+
+            with self.assertRaises (TypeOrValueExists) as received:
+                self.con.add (dn, attrs)
+
+            self.assertIn (value, str(received.exception))
+            self.assertIn (attribute, str(received.exception))
 
 class ConnectionErrors (unittest.TestCase):
 
