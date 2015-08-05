@@ -127,6 +127,9 @@ class ChangeDNTests (unittest.TestCase):
     def test_cd_completer (self):
         verifyRDNCompleterOnFirstArgument (self, ChangeDN)
 
+    def test_no_completion_on_other_arguments (self):
+        verifyOnlyCompletionOnFirstArgument (self, ChangeDN)
+
     def test_usage (self):
         ldapy = getLdapy ()
         cmd = ChangeDN (ldapy)

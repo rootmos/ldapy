@@ -63,10 +63,13 @@ class ChangeDN (Command):
             print e
 
     def complete (self, words):
-        if len(words):
-            return self.ldapy.completeChild (words[0])
+        if len(words) <= 1:
+            if len(words):
+                return self.ldapy.completeChild (words[0])
+            else:
+                return self.ldapy.children
         else:
-            return self.ldapy.children
+            return []
 
     _usage = """Usage: %s relativeDN
 Changes DN to a child DN specified by relativeDN."""
