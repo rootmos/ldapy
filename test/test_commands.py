@@ -9,6 +9,55 @@ def getLdapy ():
     con = configuration.getConnection ()
     return Ldapy (con)
 
+def verifyRDNCompleterOnFirstArgument (test, commandType):
+    with configuration.provision() as p:
+        # Isolate ourselves in a container to be sure about the contents
+        container = p.container()
+
+        a = p.container(container)
+        b = p.container(container)
+        c = p.leaf(container)
+
+        ldapy = getLdapy ()
+        ldapy.changeDN (p.root)
+        ldapy.changeDN (container.rdn)
+
+        cmd = commandType (ldapy)
+
+        # Test return all on empty list
+        matches = cmd.complete ([])
+        test.assertListEqual (sorted([a.rdn, b.rdn, c.rdn]), sorted(matches))
+
+        # Test several matches 
+        matches = cmd.complete (["%s=" % a.dnComponent])
+        test.assertItemsEqual (sorted([a.rdn, b.rdn]), sorted(matches))
+
+        # Test unique match
+        unique = b.rdn[:-1]
+        matches = cmd.complete ([unique])
+        test.assertListEqual ([b.rdn], matches)
+        
+def verifyOnlyCompletionOnFirstArgument (test, commandType):
+    with configuration.provision() as p:
+        container = p.container()
+
+        ldapy = getLdapy ()
+        ldapy.changeDN (p.root)
+        ldapy.changeDN (container.rdn)
+
+        l = p.leaf(container)
+        cmd = commandType (ldapy)
+        
+        args = []
+        for arg in ["a", "b", "c", "d"]:
+            args.append(arg)
+
+            allArgs = [l.rdn] + args
+            print "Calling cmd.complete with arguments: %s" % allArgs
+            matches = cmd.complete (allArgs)
+            test.assertListEqual(matches, [])
+
+
 class ChangeDNTests (unittest.TestCase):
 
     def test_successful_cd (self):
@@ -76,32 +125,7 @@ class ChangeDNTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_cd_completer (self):
-        with configuration.provision() as p:
-            # Isolate ourselves in a container to be sure about the contents
-            container = p.container()
-
-            a = p.container(container)
-            b = p.container(container)
-            c = p.leaf(container)
-
-            ldapy = getLdapy ()
-            ldapy.changeDN (p.root)
-            ldapy.changeDN (container.rdn)
-
-            cmd = ChangeDN (ldapy)
-
-            # Test return all on empty list
-            matches = cmd.complete ([])
-            self.assertListEqual (sorted([a.rdn, b.rdn, c.rdn]), sorted(matches))
-
-            # Test several matches 
-            matches = cmd.complete (["%s=" % a.dnComponent])
-            self.assertItemsEqual (sorted([a.rdn, b.rdn]), sorted(matches))
-
-            # Test unique match
-            unique = b.rdn[:-1]
-            matches = cmd.complete ([unique])
-            self.assertListEqual ([b.rdn], matches)
+        verifyRDNCompleterOnFirstArgument (self, ChangeDN)
 
     def test_usage (self):
         ldapy = getLdapy ()
@@ -292,30 +316,10 @@ class CatTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_cat_completer (self):
-        ldapy = self.getLdapyAtRoot()
-        with configuration.provision() as p:
-            # Isolate ourselves in a container to be sure about the contents
-            container = p.container()
-            ldapy.changeDN (container.rdn)
+        verifyRDNCompleterOnFirstArgument (self, Cat)
 
-            a = p.container(container)
-            b = p.container(container)
-            c = p.leaf(container)
-
-            cmd = Cat (ldapy)
-
-            # Test return all on empty list
-            matches = cmd.complete ([])
-            self.assertListEqual (sorted([a.rdn, b.rdn, c.rdn]), sorted(matches))
-
-            # Test several matches 
-            matches = cmd.complete (["%s=" % a.dnComponent])
-            self.assertItemsEqual (sorted([a.rdn, b.rdn]), sorted(matches))
-
-            # Test unique match
-            unique = b.rdn[:-1]
-            matches = cmd.complete ([unique])
-            self.assertListEqual ([b.rdn], matches)
+    def test_no_completion_on_other_arguments (self):
+        verifyOnlyCompletionOnFirstArgument (self, Cat)
 
     def test_usage (self):
         cmd = Cat (self.getLdapyAtRoot())
@@ -528,48 +532,10 @@ class ModifyTests (unittest.TestCase):
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
     def test_rdn_completer (self):
-        ldapy = self.getLdapyAtRoot()
-        with configuration.provision() as p:
-            # Isolate ourselves in a container to be sure about the contents
-            container = p.container()
-            ldapy.changeDN (container.rdn)
-
-            a = p.container(container)
-            b = p.container(container)
-            c = p.leaf(container)
-
-            cmd = Modify (ldapy)
-
-            # Test return all on empty list
-            matches = cmd.complete ([])
-            self.assertListEqual (sorted([a.rdn, b.rdn, c.rdn]), sorted(matches))
-
-            # Test several matches 
-            matches = cmd.complete (["%s=" % a.dnComponent])
-            self.assertItemsEqual (sorted([a.rdn, b.rdn]), sorted(matches))
-
-            # Test unique match
-            unique = b.rdn[:-1]
-            matches = cmd.complete ([unique])
-            self.assertListEqual ([b.rdn], matches)
+        verifyRDNCompleterOnFirstArgument (self, Modify)
 
     def test_no_completion_on_other_arguments (self):
-        ldapy = self.getLdapyAtRoot()
-        with configuration.provision() as p:
-            container = p.container()
-            ldapy.changeDN (container.rdn)
-
-            l = p.leaf(container)
-            cmd = Modify (ldapy)
-            
-            args = []
-            for arg in ["a", "b", "c", "d"]:
-                args.append(arg)
-
-                allArgs = [l.rdn] + args
-                print "Calling cmd.complete with arguments: %s" % allArgs
-                matches = cmd.complete (allArgs)
-                self.assertListEqual(matches, [])
+        verifyOnlyCompletionOnFirstArgument (self, Modify)
 
 
 class DeleteTests (unittest.TestCase):
@@ -588,6 +554,12 @@ class DeleteTests (unittest.TestCase):
         msg = Delete._usage % "delete"
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
+
+    def test_rdn_completer (self):
+        verifyRDNCompleterOnFirstArgument (self, Delete)
+
+    def test_no_completion_on_other_arguments (self):
+        verifyOnlyCompletionOnFirstArgument (self, Delete)
 
     def test_successful_delete_calls_ldapy_delete (self):
         ldapy = self.getLdapyAtRoot()

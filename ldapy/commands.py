@@ -119,10 +119,13 @@ class Cat (Command):
             print e
 
     def complete (self, words):
-        if len(words):
-            return self.ldapy.completeChild (words[0])
+        if len(words) <= 1:
+            if len(words):
+                return self.ldapy.completeChild (words[0])
+            else:
+                return self.ldapy.children
         else:
-            return self.ldapy.children
+            return []
 
     _usage = """Usage: %s relativeDN
 Prints the attributes of a DN specified by relativeDN."""
@@ -253,6 +256,16 @@ will be deleted recusively as well.
 
     def usage (self, words):
         print Delete._usage % self.name
+
+    def complete (self, words):
+        # On the first word we complete by children
+        if len(words) <= 1:
+            if len(words) == 1:
+                return self.ldapy.completeChild (words[0])
+            else:
+                return self.ldapy.children
+        else:
+            return []
 
 class Add(Command):
     def __init__ (self, ldapy):
