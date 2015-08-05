@@ -223,7 +223,7 @@ class ModifyUseCases (unittest.TestCase):
             self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute))
 
 class DeleteUseCases (unittest.TestCase):
-    def test_delete (self):
+    def test_delete_leaf (self):
         with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
             c = p.container ()
             l1 = p.leaf (c)
@@ -237,6 +237,21 @@ class DeleteUseCases (unittest.TestCase):
 
             self.assertFalse(p.exists (l1))
             self.assertTrue(p.exists (l2))
+
+    def test_delete_container_with_leaf (self):
+        with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
+            c = p.container ()
+            d = p.container (c)
+            l = p.leaf (d)
+            ldapy.send_command ("cd %s" % c.rdn)
+
+            self.assertTrue(p.exists (d))
+            self.assertTrue(p.exists (l))
+
+            ldapy.send_command ("delete %s" % d.rdn)
+
+            self.assertFalse(p.exists (l))
+            self.assertFalse(p.exists (d))
 
 
 class AddUseCases (unittest.TestCase):
