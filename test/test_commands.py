@@ -37,7 +37,7 @@ def verifyRDNCompleterOnFirstArgument (test, commandType):
         matches = cmd.complete ([unique])
         test.assertListEqual ([b.rdn], matches)
         
-def verifyOnlyCompletionOnFirstArgument (test, commandType):
+def verifyStopsCompletingAfter (test, commandType, n, m = 10):
     with configuration.provision() as p:
         container = p.container()
 
@@ -48,11 +48,13 @@ def verifyOnlyCompletionOnFirstArgument (test, commandType):
         l = p.leaf(container)
         cmd = commandType (ldapy)
         
+        firstArgs = [l.rdn for i in range(1, n+1)]
+        manyArgs = [l.rdn for i in range(n+1, m)]
         args = []
-        for arg in ["a", "b", "c", "d"]:
+        for arg in manyArgs:
             args.append(arg)
 
-            allArgs = [l.rdn] + args
+            allArgs = firstArgs + args
             print "Calling cmd.complete with arguments: %s" % allArgs
             matches = cmd.complete (allArgs)
             test.assertListEqual(matches, [])
@@ -128,7 +130,7 @@ class ChangeDNTests (unittest.TestCase):
         verifyRDNCompleterOnFirstArgument (self, ChangeDN)
 
     def test_no_completion_on_other_arguments (self):
-        verifyOnlyCompletionOnFirstArgument (self, ChangeDN)
+        verifyStopsCompletingAfter (self, ChangeDN, 1)
 
     def test_usage (self):
         ldapy = getLdapy ()
@@ -322,7 +324,7 @@ class CatTests (unittest.TestCase):
         verifyRDNCompleterOnFirstArgument (self, Cat)
 
     def test_no_completion_on_other_arguments (self):
-        verifyOnlyCompletionOnFirstArgument (self, Cat)
+        verifyStopsCompletingAfter (self, Cat, 1)
 
     def test_usage (self):
         cmd = Cat (self.getLdapyAtRoot())
@@ -538,7 +540,7 @@ class ModifyTests (unittest.TestCase):
         verifyRDNCompleterOnFirstArgument (self, Modify)
 
     def test_no_completion_on_other_arguments (self):
-        verifyOnlyCompletionOnFirstArgument (self, Modify)
+        verifyStopsCompletingAfter (self, Modify, 1)
 
 
 class DeleteTests (unittest.TestCase):
@@ -562,7 +564,7 @@ class DeleteTests (unittest.TestCase):
         verifyRDNCompleterOnFirstArgument (self, Delete)
 
     def test_no_completion_on_other_arguments (self):
-        verifyOnlyCompletionOnFirstArgument (self, Delete)
+        verifyStopsCompletingAfter (self, Delete, 1)
 
     def test_successful_delete_calls_ldapy_delete (self):
         ldapy = self.getLdapyAtRoot()
