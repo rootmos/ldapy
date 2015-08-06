@@ -4,7 +4,7 @@ import configuration
 from ldapy.node import NodeError
 from ldapy.ldapy import Ldapy, AlreadyAtRoot, SetAttributeError, DeleteError
 from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
-
+import io
 
 class BasicLdapyTests (unittest.TestCase):
     def setUp (self):
@@ -263,66 +263,74 @@ class ArgumentParserTests (unittest.TestCase):
 
         host = "localhost"
         port = 7
+        uri = "ldap://%s:%u" % (host, port)
         bind_dn = "cn=admin"
         password = "foobar"
         args = ["-H", host, "-p", str(port), "-D", bind_dn, "-w", password]
 
-        self.assertTrue (ldapy.parseArguments (args))
-        self.assertEqual (ldapy.args.host, host)
-        self.assertEqual (ldapy.args.port, port)
-        self.assertEqual (ldapy.args.bind_dn, bind_dn)
-        self.assertEqual (ldapy.args.password, password)
+        connectionData = ldapy.parseArguments (args)
+        self.assertEqual (connectionData.uri, uri)
+        self.assertEqual (connectionData.bind_dn, bind_dn)
+        self.assertEqual (connectionData.password, password)
 
     def test_successful_parse_with_uri (self):
         ldapy = Ldapy (self.con)
 
         host = "localhost"
         port = 7
+        uri = "ldap://%s:%u" % (host, port)
         bind_dn = "cn=admin"
         password = "foobar"
         args = ["ldap://%s:%s" % (host, port), "-D", bind_dn, "-w", password]
 
-        self.assertTrue (ldapy.parseArguments (args))
-        self.assertEqual (ldapy.args.host, host)
-        self.assertEqual (ldapy.args.port, port)
-        self.assertEqual (ldapy.args.bind_dn, bind_dn)
-        self.assertEqual (ldapy.args.password, password)
-
+        connectionData = ldapy.parseArguments (args)
+        self.assertEqual (connectionData.uri, uri)
+        self.assertEqual (connectionData.bind_dn, bind_dn)
+        self.assertEqual (connectionData.password, password)
 
     def test_neither_host_nor_uri_is_specified (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('argparse.ArgumentParser.error') as error_mock:
-            ldapy.parseArguments ([])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments ([])
 
-        error_mock.assert_called_with (Ldapy._neither_host_nor_uri_given)
+        self.assertIn(ldapy._neither_host_nor_uri_given, output.getvalue())
+        self.assertEqual(e.exception.code, 2)
 
     def test_both_host_and_uri_is_specified (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('argparse.ArgumentParser.error') as error_mock:
-            ldapy.parseArguments (["-H", "foo", "ldap://bar"])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["-H", "foo", "ldap://bar"])
 
-        error_mock.assert_called_with (Ldapy._both_host_and_uri_given)
+        self.assertIn(ldapy._both_host_and_uri_given, output.getvalue())
+        self.assertEqual(e.exception.code, 2)
 
     def test_malformed_uri (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('argparse.ArgumentParser.error') as error_mock:
-            ldapy.parseArguments (["foobar://lars"])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["foobar://lars"])
 
-        error_mock.assert_called_with (Ldapy._uri_malformed)
+        self.assertIn(ldapy._uri_malformed, output.getvalue())
+        self.assertEqual(e.exception.code, 2)
 
     def test_port_invalid_number (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('argparse.ArgumentParser.error') as error_mock:
-            ldapy.parseArguments (["-H", "foo", "-p", "-1"])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["-H", "foo", "-p", "-1"])
 
-        error_mock.assert_called_with (Ldapy._port_is_not_a_valid_number)
-        error_mock.reset_mock ()
+        self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
+        self.assertEqual(e.exception.code, 2)
 
-        with mock.patch('argparse.ArgumentParser.error') as error_mock:
-            ldapy.parseArguments (["-H", "foo", "-p", str(0xffff + 1)])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["-H", "foo", "-p", str(0xffff + 1)])
 
-        error_mock.assert_called_with (Ldapy._port_is_not_a_valid_number)
+        self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
+        self.assertEqual(e.exception.code, 2)

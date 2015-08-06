@@ -42,16 +42,23 @@ class DeleteError (LdapyError):
     def __init__ (self, msg):
         self.msg = msg
 
+class ConnectionData:
+    def __init__ (self, uri, bind_dn, password = None):
+        self.uri = uri
+        self.bind_dn = bind_dn
+        self.password = password
+
 class Ldapy:
     def __init__ (self, con = None):
         if con:
             self.connection = con
         else:
-            self.parseArguments ()
+            connectionData = self.parseArguments ()
 
             try:
-                self.connection = connection.Connection (self.args.URI)
-                self.connection.bind (self.args.bind_dn, self.args.password)
+                self.connection = connection.Connection (connectionData.uri)
+                self.connection.bind (connectionData.bind_dn,
+                                      connectionData.password)
             except connection.ConnectionError as e:
                 logger.critical (e)
                 sys.exit (1)
@@ -142,16 +149,22 @@ class Ldapy:
         # Take this opportunity to set the logging levels as early as possible
         self.setLoggingLevels ()
 
+        # Validate the arguments, it will exit the process on errors
         return self.validateArguments (parser)
 
+
     def validateArguments (self, parser):
+        """Validates the arguments parsed by self.args and exits the process
+        with the parser's error function if an error is found.
+
+        If it succeeds with the validaton, an ConnectionData object is
+        returned with the values given by the parser."""
+
         if not self.args.host and not self.args.URI:
             parser.error (Ldapy._neither_host_nor_uri_given)
-            return False
 
         if self.args.host and self.args.URI:
             parser.error (Ldapy._both_host_and_uri_given)
-            return False
 
         if self.args.URI:
             try:
@@ -162,17 +175,15 @@ class Ldapy:
                     self.args.port = int(hostport[1])
             except ValueError:
                 parser.error (Ldapy._uri_malformed)
-                return False
         else:
             self.args.URI = "ldap://%s:%s" % (self.args.host, self.args.port)
 
         if self.args.port < 0 or self.args.port > 0xffff:
             parser.error (Ldapy._port_is_not_a_valid_number)
-            return False
 
         logger.debug ("Arguments: %s" % vars(self.args))
 
-        return True
+        return ConnectionData (self.args.URI, self.args.bind_dn, self.args.password)
 
     def setLoggingLevels (self):
         # Obtain the global ldapy logger
