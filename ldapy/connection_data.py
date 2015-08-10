@@ -28,9 +28,18 @@ class ConnectionData:
     @staticmethod
     def load (data):
         try:
-            return ConnectionData (data["uri"], data["bind_dn"], data["password"])
+            if "password" in data:
+                return ConnectionData (data["uri"], data["bind_dn"], data["password"])
+            else:
+                return ConnectionData (data["uri"], data["bind_dn"])
         except KeyError, key:
             raise SyntaxError("Syntax error parsing connection data: no %s field" % key)
+
+    def __eq__ (self, other):
+        return isinstance(other, self.__class__) and \
+                self.uri == other.uri and \
+                self.bind_dn == other.bind_dn and \
+                self.password == other.password
 
 class ConnectionDataManager:
     """A class for managing ConnectionData items for recent and saved
@@ -54,20 +63,32 @@ class ConnectionDataManager:
                 raw = f.read()
                 logger.debug("Raw data from %s: %s" % (ConnectionDataManager.filename, raw))
                 parsed = json.loads(raw)
+                if not isinstance(parsed, dict):
+                    raise SyntaxError("Syntax error: outer element should be a dictionary (containing 'recent' and 'saved' elements)")
                 logger.debug("Parsed data from %s: %s" % (ConnectionDataManager.filename, parsed))
 
-                rawRecent = parsed[0]
+                # Parse the recent connections
+                rawRecent = parsed["recent"]
+                if not isinstance(rawRecent, list):
+                    raise SyntaxError("Syntax error: recent element should be a list")
+
                 recent = []
                 for data in rawRecent:
                     recent.append (ConnectionData.load(data))
 
-                rawSaved = parsed[1]
+                # Parse the saved connections
+                rawSaved = parsed["saved"]
+                print rawSaved
+                if not isinstance(rawSaved, dict):
+                    raise SyntaxError("Syntax error: saved element should be a dictionary")
+
                 saved = {}
-                for data in rawRecent:
-                    name = data["name"]
+                for name, data in rawSaved.iteritems():
                     saved[name] = ConnectionData.load(data)
 
                 return (recent, saved)
+        except KeyError, key:
+            raise SyntaxError("Syntax error parsing connection data: no %s field" % key)
         except IOError as e:
             logger.warning("Error opening file %s: %s" %
                     (ConnectionDataManager.filename, e))
