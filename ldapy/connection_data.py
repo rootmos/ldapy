@@ -106,7 +106,10 @@ class ConnectionDataManager:
     def getRecentConnections (self, M = None):
         """Retrieves the recent connections, up to M entries or all if not
         specified"""
-        return self.recent
+        if M is None:
+            return self.recent
+        else:
+            return self.recent[:M]
 
 
     def saveConnection (self, name, connectionData):

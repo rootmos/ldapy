@@ -202,5 +202,9 @@ class ConnectionDataManagerTests (unittest.TestCase):
             for n in range(0, N):
                 self.assertEqual(connections[n], manager.getRecentConnection(n))
 
-            # Test getRecentConnections
+            # Test getRecentConnections without arguments
             self.assertListEqual (connections, manager.getRecentConnections())
+
+            # Test getRecentConnection with arguments
+            for n in range(0, N):
+                self.assertListEqual (connections[:n], manager.getRecentConnections(n)) 
