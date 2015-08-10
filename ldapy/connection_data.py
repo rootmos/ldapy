@@ -50,7 +50,8 @@ class ConnectionDataManager:
     def __init__ (self):
         """Initializes the ConnectionDataManager, by parsing the file
         containing the recent and saved connections"""
-        pass
+
+        self.recent, self.saved = ConnectionDataManager._readAndParseFile()
 
     @staticmethod
     def _readAndParseFile ():

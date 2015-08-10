@@ -154,3 +154,15 @@ class ParserTests (unittest.TestCase):
     def test_saved_wrong_type (self):
         self.parseWithSyntaxError('{"recent":[],"saved":[]}')
 
+class ConnectionDataManagerTests (unittest.TestCase):
+    def test_init (self):
+        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
+                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+            recentList = ["foo"]
+            savedDict = {"bar":"baz"}
+            parserMock.return_value = (recentList, savedDict)
+            manager = ConnectionDataManager()
+
+            parserMock.assert_called_once_with ()
+            self.assertEqual (manager.recent, recentList)
+            self.assertEqual (manager.saved, savedDict)
