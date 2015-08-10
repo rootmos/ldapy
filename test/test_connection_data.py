@@ -166,3 +166,21 @@ class ConnectionDataManagerTests (unittest.TestCase):
             parserMock.assert_called_once_with ()
             self.assertEqual (manager.recent, recentList)
             self.assertEqual (manager.saved, savedDict)
+
+    def test_addRecentConnection (self):
+        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
+                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+
+            previousConnection = ConnectionData("ldap://previous.com", "cn=previous")
+            nextConnection = ConnectionData("ldap://next.com", "cn=next")
+
+            recentList = [previousConnection]
+            savedDict = {}
+            parserMock.return_value = (recentList, savedDict)
+
+            manager = ConnectionDataManager()
+            manager.addRecentConnection (nextConnection)
+
+            expectedRecent = [nextConnection, previousConnection]
+            self.assertListEqual(expectedRecent, manager.recent)
+

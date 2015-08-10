@@ -97,7 +97,7 @@ class ConnectionDataManager:
 
     def addRecentConnection (self, connectionData):
         """Saves a connection to the history of recent connections"""
-        pass
+        self.recent.insert(0, connectionData)
 
     def getRecentConnection (self, N = 1):
         """Retrieves the N:th connection in the history"""
