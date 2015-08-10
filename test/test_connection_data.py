@@ -184,3 +184,23 @@ class ConnectionDataManagerTests (unittest.TestCase):
             expectedRecent = [nextConnection, previousConnection]
             self.assertListEqual(expectedRecent, manager.recent)
 
+    def test_getRecentConnection_and_getRecentConnections (self):
+        connections = []
+        N = 10
+        for n in range(0,N):
+            connections.append(ConnectionData("ldap://%u.com" % n, "cn=%u" % n))
+
+        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
+                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+            parserMock.return_value = (connections, {})
+            manager = ConnectionDataManager()
+
+            # Test getRecentConnection without arguments
+            self.assertEqual(connections[0], manager.getRecentConnection())
+
+            # Test getRecentConnection with arguments
+            for n in range(0, N):
+                self.assertEqual(connections[n], manager.getRecentConnection(n))
+
+            # Test getRecentConnections
+            self.assertListEqual (connections, manager.getRecentConnections())
