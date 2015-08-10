@@ -19,6 +19,7 @@ import ldapurl
 import connection
 import exceptions
 import sys
+from connection_data import ConnectionData
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
@@ -41,12 +42,6 @@ class SetAttributeError (LdapyError):
 class DeleteError (LdapyError):
     def __init__ (self, msg):
         self.msg = msg
-
-class ConnectionData:
-    def __init__ (self, uri, bind_dn, password = None):
-        self.uri = uri
-        self.bind_dn = bind_dn
-        self.password = password
 
 class Ldapy:
     def __init__ (self, con = None):
