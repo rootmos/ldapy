@@ -1,6 +1,7 @@
 import unittest
 import mock
 import json
+import string
 from ldapy.connection_data import ConnectionDataManager, ConnectionData
 
 class ConnectionDataFormater:
@@ -155,6 +156,29 @@ class ParserTests (unittest.TestCase):
         self.parseWithSyntaxError('{"recent":[],"saved":[]}')
 
 class ConnectionDataManagerTests (unittest.TestCase):
+
+    def createConnectionData (self, token):
+        return ConnectionData("ldap://%s.com" % str(token), "cn=%s" % str(token))
+
+    def createConnectionManager (self, numOfRecent = 0, numOfSaved = 0):
+        recent = []
+        for n in range(0, numOfRecent):
+            recent.append(self.createConnectionData(n))
+
+        saved = {}
+        for c in string.lowercase[:numOfSaved]:
+            saved[c] = self.createConnectionData(c)
+
+        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
+                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+            parserMock.return_value = (recent, saved)
+            manager = ConnectionDataManager()
+
+        self.assertListEqual (recent, manager.recent)
+        self.assertDictEqual (saved, manager.saved)
+        return manager, list(recent), dict(saved)
+
+
     def test_init (self):
         with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
                 spec=ConnectionDataManager._readAndParseFile) as parserMock:
@@ -168,80 +192,51 @@ class ConnectionDataManagerTests (unittest.TestCase):
             self.assertEqual (manager.saved, savedDict)
 
     def test_addRecentConnection (self):
-        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
-                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+        manager, recent, saved = self.createConnectionManager (numOfRecent = 1)
 
-            previousConnection = ConnectionData("ldap://previous.com", "cn=previous")
-            nextConnection = ConnectionData("ldap://next.com", "cn=next")
+        newConnection = self.createConnectionData ("new")
+        manager.addRecentConnection (newConnection)
 
-            recentList = [previousConnection]
-            savedDict = {}
-            parserMock.return_value = (recentList, savedDict)
-
-            manager = ConnectionDataManager()
-            manager.addRecentConnection (nextConnection)
-
-            expectedRecent = [nextConnection, previousConnection]
-            self.assertListEqual(expectedRecent, manager.recent)
-            self.assertDictEqual(savedDict, manager.saved)
+        recent.insert(0, newConnection)
+        self.assertListEqual(recent, manager.recent)
+        self.assertDictEqual(saved, manager.saved)
 
     def test_getRecentConnection_and_getRecentConnections (self):
-        connections = []
         N = 10
-        for n in range(0,N):
-            connections.append(ConnectionData("ldap://%u.com" % n, "cn=%u" % n))
+        manager, connections, _ = self.createConnectionManager (numOfRecent = N)
 
-        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
-                spec=ConnectionDataManager._readAndParseFile) as parserMock:
-            parserMock.return_value = (connections, {})
-            manager = ConnectionDataManager()
+        # Test getRecentConnection without arguments
+        self.assertEqual(connections[0], manager.getRecentConnection())
 
-            # Test getRecentConnection without arguments
-            self.assertEqual(connections[0], manager.getRecentConnection())
+        # Test getRecentConnection with arguments
+        for n in range(0, N):
+            self.assertEqual(connections[n], manager.getRecentConnection(n))
 
-            # Test getRecentConnection with arguments
-            for n in range(0, N):
-                self.assertEqual(connections[n], manager.getRecentConnection(n))
+        # Test getRecentConnections without arguments
+        self.assertListEqual (connections, manager.getRecentConnections())
 
-            # Test getRecentConnections without arguments
-            self.assertListEqual (connections, manager.getRecentConnections())
-
-            # Test getRecentConnection with arguments
-            for n in range(0, N):
-                self.assertListEqual (connections[:n], manager.getRecentConnections(n)) 
+        # Test getRecentConnection with arguments
+        for n in range(0, N):
+            self.assertListEqual (connections[:n], manager.getRecentConnections(n)) 
 
     def test_saveConnection (self):
-        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
-                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+        manager, recent, saved = self.createConnectionManager (numOfSaved = 1)
 
-            aConnection = ConnectionData("ldap://previous.com", "cn=previous")
-            bConnection = ConnectionData("ldap://next.com", "cn=next")
+        newKey = "new"
+        newConnection = self.createConnectionData (newKey)
 
-            recentList = []
-            savedDict = {"a": aConnection}
-            parserMock.return_value = (recentList, savedDict)
+        manager.saveConnection (newKey, newConnection)
 
-            manager = ConnectionDataManager()
-            manager.saveConnection ("b", bConnection)
-
-            expectedSaved = {"a": aConnection, "b": bConnection}
-            self.assertListEqual(recentList, manager.recent)
-            self.assertDictEqual(expectedSaved, manager.saved)
+        saved[newKey] = newConnection
+        self.assertListEqual(recent, manager.recent)
+        self.assertDictEqual(saved, manager.saved)
 
     def test_removeConnection (self):
-        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
-                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+        manager, recent, saved = self.createConnectionManager (numOfSaved = 3)
 
-            aConnection = ConnectionData("ldap://previous.com", "cn=previous")
-            bConnection = ConnectionData("ldap://next.com", "cn=next")
+        delKey = "b"
+        manager.removeConnection (delKey)
 
-            recentList = []
-            savedDict = {"a": aConnection, "b": bConnection}
-            parserMock.return_value = (recentList, savedDict)
-
-            manager = ConnectionDataManager()
-            manager.removeConnection ("a")
-
-            expectedSaved = {"b": bConnection}
-            self.assertListEqual(recentList, manager.recent)
-            self.assertDictEqual(expectedSaved, manager.saved)
+        del saved[delKey]
+        self.assertListEqual(recent, manager.recent)
+        self.assertDictEqual(saved, manager.saved)
