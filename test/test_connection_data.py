@@ -183,6 +183,7 @@ class ConnectionDataManagerTests (unittest.TestCase):
 
             expectedRecent = [nextConnection, previousConnection]
             self.assertListEqual(expectedRecent, manager.recent)
+            self.assertDictEqual(savedDict, manager.saved)
 
     def test_getRecentConnection_and_getRecentConnections (self):
         connections = []
@@ -208,3 +209,39 @@ class ConnectionDataManagerTests (unittest.TestCase):
             # Test getRecentConnection with arguments
             for n in range(0, N):
                 self.assertListEqual (connections[:n], manager.getRecentConnections(n)) 
+
+    def test_saveConnection (self):
+        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
+                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+
+            aConnection = ConnectionData("ldap://previous.com", "cn=previous")
+            bConnection = ConnectionData("ldap://next.com", "cn=next")
+
+            recentList = []
+            savedDict = {"a": aConnection}
+            parserMock.return_value = (recentList, savedDict)
+
+            manager = ConnectionDataManager()
+            manager.saveConnection ("b", bConnection)
+
+            expectedSaved = {"a": aConnection, "b": bConnection}
+            self.assertListEqual(recentList, manager.recent)
+            self.assertDictEqual(expectedSaved, manager.saved)
+
+    def test_removeConnection (self):
+        with mock.patch("ldapy.connection_data.ConnectionDataManager._readAndParseFile",
+                spec=ConnectionDataManager._readAndParseFile) as parserMock:
+
+            aConnection = ConnectionData("ldap://previous.com", "cn=previous")
+            bConnection = ConnectionData("ldap://next.com", "cn=next")
+
+            recentList = []
+            savedDict = {"a": aConnection, "b": bConnection}
+            parserMock.return_value = (recentList, savedDict)
+
+            manager = ConnectionDataManager()
+            manager.removeConnection ("a")
+
+            expectedSaved = {"b": bConnection}
+            self.assertListEqual(recentList, manager.recent)
+            self.assertDictEqual(expectedSaved, manager.saved)

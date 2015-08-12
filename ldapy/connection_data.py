@@ -114,7 +114,11 @@ class ConnectionDataManager:
 
     def saveConnection (self, name, connectionData):
         """Saves a connection to be retrieved by the specified name"""
-        pass
+        self.saved[name] = connectionData
+    
+    def removeConnection (self, name):
+        """Removes a previously saved connection by the specified name"""
+        del self.saved[name]
 
     def getConnection (self, name):
         """Retrieves the connection with the specified name"""
