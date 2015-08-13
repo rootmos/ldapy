@@ -137,13 +137,17 @@ class ConnectionDataManager:
 
     @staticmethod
     def _unparse (recent = None, saved = None):
+        """Converts a list of recent, and a dictionary of saved connections
+        into a JSON string"""
         if recent is None:
             recent = []
         
         if saved is None:
             saved = {}
 
-        return json.dumps ({"recent": recent, "saved": saved},
+        return json.dumps (
+                {"recent": [r.save() for r in recent],
+                 "saved": {k: s.save() for k, s in saved.iteritems()}},
                 sort_keys=True,
                 separators=(',', ':'))
 

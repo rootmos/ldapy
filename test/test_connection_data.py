@@ -181,8 +181,8 @@ class UnparserTests (unittest.TestCase):
         savedStr = ",".join(sorted([str(s) for s in saved.itervalues()]))
 
         data = ConnectionDataManager._unparse (
-                [x.data.save() for x in recent],
-                {k: v.data.save() for k,v in saved.iteritems()})
+                [x.data for x in recent],
+                {k: v.data for k,v in saved.iteritems()})
         expected = UnparserTests.fmt % (recentStr, savedStr)
         print data
         print expected
@@ -325,9 +325,7 @@ class ConnectionDataManagerTests (unittest.TestCase):
     def test_combining_unparser_and_parser (self):
         _, recent, saved = self.createConnectionManager (numOfRecent = 4, numOfSaved = 3)
 
-        raw = ConnectionDataManager._unparse (
-                [x.save() for x in recent],
-                {k: v.save() for k, v in saved.iteritems()})
+        raw = ConnectionDataManager._unparse (recent, saved)
         newRecent, newSaved = ConnectionDataManager._parse(raw)
 
         self.assertListEqual (newRecent, recent)
