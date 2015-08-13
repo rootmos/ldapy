@@ -17,6 +17,7 @@ make install
 ```
 
 This will try to:
+
 1. Install all requirements (see the `requirements.txt` file) using `pip`
 2. Gather a distribution file with `python setup.py`
 3. Install `ldapy` using `pip`
