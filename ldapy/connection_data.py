@@ -29,6 +29,7 @@ class ConnectionData:
 
     @staticmethod
     def load (data):
+        """Converts a dictionary to a ConnectionData object"""
         try:
             if "password" in data:
                 return ConnectionData (data["uri"], data["bind_dn"], data["password"])
@@ -36,6 +37,15 @@ class ConnectionData:
                 return ConnectionData (data["uri"], data["bind_dn"])
         except KeyError, key:
             raise SyntaxError("Syntax error parsing connection data: no %s field" % key)
+
+    def save (self):
+        """Converts this ConnectionData object to a dictionary"""
+        data = {"uri": self.uri, "bind_dn": self.bind_dn}
+
+        if self.password:
+            data["password"] = self.password
+
+        return data
 
     def __eq__ (self, other):
         return isinstance(other, self.__class__) and \

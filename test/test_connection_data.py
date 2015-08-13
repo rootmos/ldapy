@@ -65,6 +65,29 @@ class ConnectionDataTests (unittest.TestCase):
         with self.assertRaises(SyntaxError):
             connectionData = ConnectionData.load (data.parsed)
 
+    def test_ConnectionData_save_with_password (self):
+        data = ConnectionDataFormater(
+                uri = "ldap://foobar.com",
+                bind_dn = "cn=Admin,dc=nodomain",
+                password = "ThePassword123")
+
+        expected = {"uri": data.uri,
+                    "bind_dn": data.bind_dn,
+                    "password": data.password}
+
+        self.assertDictEqual (expected, data.data.save())
+
+    def test_ConnectionData_save_without_password (self):
+        data = ConnectionDataFormater(
+                uri = "ldap://foobar.com",
+                bind_dn = "cn=Admin,dc=nodomain")
+
+        expected = {"uri": data.uri,
+                    "bind_dn": data.bind_dn}
+
+        self.assertDictEqual (expected, data.data.save())
+
+
 class ParserTests (unittest.TestCase):
 
     def test_successful_trivial_parsing (self):
