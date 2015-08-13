@@ -240,3 +240,14 @@ class ConnectionDataManagerTests (unittest.TestCase):
         del saved[delKey]
         self.assertListEqual(recent, manager.recent)
         self.assertDictEqual(saved, manager.saved)
+
+    def test_getConnection (self):
+        manager, _, saved = self.createConnectionManager (numOfSaved = 3)
+
+        key = "b"
+        self.assertEqual (saved[key], manager.getConnection(key))
+
+    def test_getConnections (self):
+        manager, _, saved = self.createConnectionManager (numOfSaved = 3)
+        self.assertDictEqual (saved, manager.getConnections())
+

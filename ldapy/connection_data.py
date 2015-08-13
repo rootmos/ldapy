@@ -122,10 +122,10 @@ class ConnectionDataManager:
 
     def getConnection (self, name):
         """Retrieves the connection with the specified name"""
-        pass
+        return self.saved[name]
 
     def getConnections (self):
         """Retrieves all saved connections"""
-        pass
+        return self.saved
 
 
