@@ -93,15 +93,10 @@ class ParserTests (unittest.TestCase):
     def test_successful_trivial_parsing (self):
         trivialData = '{"recent":[],"saved":{}}'
 
-        with mock.patch("__builtin__.open", create=True) as mock_open:
-            mock_open.return_value = mock.MagicMock(spec=file)
-            f = mock_open.return_value.__enter__.return_value
-            f.read.return_value = trivialData
+        recent, saved = ConnectionDataManager._parse(trivialData)
 
-            recent, saved = ConnectionDataManager._readAndParseFile()
-
-            self.assertListEqual([], recent)
-            self.assertDictEqual({}, saved)
+        self.assertListEqual([], recent)
+        self.assertDictEqual({}, saved)
     
     def test_successful_parsing (self):
         recent1 = ConnectionDataFormater(
@@ -130,35 +125,16 @@ class ParserTests (unittest.TestCase):
 
         json = '{"recent":%s,"saved":%s}' % (recentJson, savedJson)
 
-        with mock.patch("__builtin__.open", create=True) as mock_open:
-            mock_open.return_value = mock.MagicMock(spec=file)
-            f = mock_open.return_value.__enter__.return_value
-            f.read.return_value = json
+        parsedRecent, parsedSaved = ConnectionDataManager._parse(json)
 
-            parsedRecent, parsedSaved = ConnectionDataManager._readAndParseFile()
+        self.assertListEqual (expectedRecent, parsedRecent)
+        self.assertDictEqual (expectedSaved, parsedSaved)
 
-            self.assertListEqual (expectedRecent, parsedRecent)
-            self.assertDictEqual (expectedSaved, parsedSaved)
-
-    def test_file_does_not_exist_return_empty_tuple (self):
-        with mock.patch("__builtin__.open", create=True) as mock_open:
-            mock_open.return_value = mock.MagicMock(spec=file)
-            mock_open.return_value.__enter__.side_effect = IOError
-
-            recent, saved = ConnectionDataManager._readAndParseFile()
-
-            self.assertListEqual([], recent)
-            self.assertDictEqual({}, saved)
 
     def parseWithSyntaxError (self, data):
-        with mock.patch("__builtin__.open", create=True) as mock_open:
-            mock_open.return_value = mock.MagicMock(spec=file)
-            f = mock_open.return_value.__enter__.return_value
-            f.read.return_value = data
-
-            with self.assertRaises(SyntaxError) as received:
-                ConnectionDataManager._readAndParseFile()
-            print received.exception
+        with self.assertRaises(SyntaxError) as received:
+            ConnectionDataManager._parse(data)
+        print received.exception
 
     def test_wrong_outer_type (self):
         self.parseWithSyntaxError ("[]")
@@ -213,6 +189,16 @@ class ConnectionDataManagerTests (unittest.TestCase):
             parserMock.assert_called_once_with ()
             self.assertEqual (manager.recent, recentList)
             self.assertEqual (manager.saved, savedDict)
+
+    def test_file_does_not_exist (self):
+        with mock.patch("__builtin__.open", create=True) as mock_open:
+            mock_open.return_value = mock.MagicMock(spec=file)
+            mock_open.return_value.__enter__.side_effect = IOError
+
+            manager = ConnectionDataManager()
+
+            self.assertListEqual([], manager.recent)
+            self.assertDictEqual({}, manager.saved)
 
     def test_addRecentConnection (self):
         manager, recent, saved = self.createConnectionManager (numOfRecent = 1)

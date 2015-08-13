@@ -92,42 +92,48 @@ class ConnectionDataManager:
         """Parses the file specified by ConnectionDataManager.filename and
         returns a tuple:
             (list of recent connections, dictionary of saved connections)"""
-        
         try:
             with open(ConnectionDataManager.filename, "r") as f:
                 raw = f.read()
-                logger.debug("Raw data from %s: %s" % (ConnectionDataManager.filename, raw))
-                parsed = json.loads(raw)
-                if not isinstance(parsed, dict):
-                    raise SyntaxError("Syntax error: outer element should be a dictionary (containing 'recent' and 'saved' elements)")
-                logger.debug("Parsed data from %s: %s" % (ConnectionDataManager.filename, parsed))
-
-                # Parse the recent connections
-                rawRecent = parsed["recent"]
-                if not isinstance(rawRecent, list):
-                    raise SyntaxError("Syntax error: recent element should be a list")
-
-                recent = []
-                for data in rawRecent:
-                    recent.append (ConnectionData.load(data))
-
-                # Parse the saved connections
-                rawSaved = parsed["saved"]
-                print rawSaved
-                if not isinstance(rawSaved, dict):
-                    raise SyntaxError("Syntax error: saved element should be a dictionary")
-
-                saved = {}
-                for name, data in rawSaved.iteritems():
-                    saved[name] = ConnectionData.load(data)
-
-                return (recent, saved)
-        except KeyError, key:
-            raise SyntaxError("Syntax error parsing connection data: no %s field" % key)
+                return ConnectionDataManager._parse(raw)
         except IOError as e:
             logger.warning("Error opening file %s: %s" %
                     (ConnectionDataManager.filename, e))
-            return ([], {})
+            return [], {}
+
+    @staticmethod
+    def _parse (raw):
+        """Parses the input data into a tuple:
+            (list of recent connections, dictionary of saved connections)"""
+        try:
+            logger.debug("Raw data from %s: %s" % (ConnectionDataManager.filename, raw))
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                raise SyntaxError("Syntax error: outer element should be a dictionary (containing 'recent' and 'saved' elements)")
+            logger.debug("Parsed data from %s: %s" % (ConnectionDataManager.filename, parsed))
+
+            # Parse the recent connections
+            rawRecent = parsed["recent"]
+            if not isinstance(rawRecent, list):
+                raise SyntaxError("Syntax error: recent element should be a list")
+
+            recent = []
+            for data in rawRecent:
+                recent.append (ConnectionData.load(data))
+
+            # Parse the saved connections
+            rawSaved = parsed["saved"]
+            print rawSaved
+            if not isinstance(rawSaved, dict):
+                raise SyntaxError("Syntax error: saved element should be a dictionary")
+
+            saved = {}
+            for name, data in rawSaved.iteritems():
+                saved[name] = ConnectionData.load(data)
+
+            return (recent, saved)
+        except KeyError, key:
+            raise SyntaxError("Syntax error parsing connection data: no %s field" % key)
 
     def addRecentConnection (self, connectionData):
         """Saves a connection to the history of recent connections"""
