@@ -2,7 +2,7 @@ import unittest
 import mock
 import json
 import string
-from ldapy.connection_data import ConnectionDataManager, ConnectionData
+from ldapy.connection_data import *
 
 class ConnectionDataFormater:
     def __init__ (self, uri = None, bind_dn = None, password = None, name = None):
@@ -219,6 +219,16 @@ class ConnectionDataManagerTests (unittest.TestCase):
         for n in range(0, N):
             self.assertListEqual (connections[:n], manager.getRecentConnections(n)) 
 
+    def test_getRecentConnection_with_too_large_number (self):
+        N = 2
+        manager, _, _ = self.createConnectionManager (numOfRecent = N - 1)
+
+        with self.assertRaises (NoSuchRecentConnection) as received:
+            manager.getRecentConnection (N)
+
+        msg = NoSuchRecentConnection._msg % ordinal (N)
+        self.assertEqual (msg, str(received.exception))
+
     def test_saveConnection (self):
         manager, recent, saved = self.createConnectionManager (numOfSaved = 1)
 
@@ -241,13 +251,38 @@ class ConnectionDataManagerTests (unittest.TestCase):
         self.assertListEqual(recent, manager.recent)
         self.assertDictEqual(saved, manager.saved)
 
+    def test_remove_nonexistent_connection (self):
+        manager, _, _ = self.createConnectionManager ()
+
+        with self.assertRaises (NoSuchSavedConnection):
+            manager.removeConnection ("b")
+
     def test_getConnection (self):
         manager, _, saved = self.createConnectionManager (numOfSaved = 3)
 
         key = "b"
         self.assertEqual (saved[key], manager.getConnection(key))
 
+    def test_getConnection_for_nonexistent_name (self):
+        manager, _, _ = self.createConnectionManager ()
+
+        key = "c"
+        with self.assertRaises (NoSuchSavedConnection) as received:
+            manager.getConnection (key)
+
+        msg = NoSuchSavedConnection._msg % key
+        self.assertEqual (msg, str(received.exception))
+        
     def test_getConnections (self):
         manager, _, saved = self.createConnectionManager (numOfSaved = 3)
         self.assertDictEqual (saved, manager.getConnections())
+
+
+class OrdinalsTest (unittest.TestCase):
+    def test_ordinals (self):
+        tests = [(1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th"),
+                 (12, "12th"), (13, "13th"),
+                 (22, "22nd"), (23, "23rd"), (24, "24th")]
+        for n, s in tests:
+            self.assertEqual (s, ordinal(n))
 

@@ -18,6 +18,8 @@ import json
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
 
+
+
 class ConnectionData:
     """A simple container for connection data, eg URI and bind DN"""
     def __init__ (self, uri, bind_dn, password = None):
@@ -40,6 +42,28 @@ class ConnectionData:
                 self.uri == other.uri and \
                 self.bind_dn == other.bind_dn and \
                 self.password == other.password
+
+
+
+class ConnectionDataManagerError (Exception):
+    def __str__ (self):
+        return str(self.msg)
+
+def ordinal (i):
+    """Written by Garet @ http://codegolf.stackexchange.com/questions/4707/outputting-ordinal-numbers-1st-2nd-3rd#answer-4712"""
+    k=i%10
+    return "%d%s"%(i,"tsnrhtdd"[(i/10%10!=1)*(k<4)*k::4])
+
+class NoSuchRecentConnection (ConnectionDataManagerError):
+    _msg = "The %s most recent connection does not exist"
+    def __init__ (self, N):
+        self.msg = NoSuchRecentConnection._msg % ordinal (N)
+
+class NoSuchSavedConnection (ConnectionDataManagerError):
+    _msg = "No saved connection with name: %s"
+    def __init__ (self, name):
+        self.msg = NoSuchSavedConnection._msg  % name
+
 
 class ConnectionDataManager:
     """A class for managing ConnectionData items for recent and saved
@@ -101,7 +125,10 @@ class ConnectionDataManager:
 
     def getRecentConnection (self, N = 0):
         """Retrieves the N:th connection in the history"""
-        return self.recent[N]
+        try:
+            return self.recent[N]
+        except IndexError:
+            raise NoSuchRecentConnection (N)
 
     def getRecentConnections (self, M = None):
         """Retrieves the recent connections, up to M entries or all if not
@@ -118,11 +145,17 @@ class ConnectionDataManager:
     
     def removeConnection (self, name):
         """Removes a previously saved connection by the specified name"""
-        del self.saved[name]
+        try:
+            del self.saved[name]
+        except KeyError:
+            raise NoSuchSavedConnection (name)
 
     def getConnection (self, name):
         """Retrieves the connection with the specified name"""
-        return self.saved[name]
+        try:
+            return self.saved[name]
+        except KeyError:
+            raise NoSuchSavedConnection (name)
 
     def getConnections (self):
         """Retrieves all saved connections"""
