@@ -135,6 +135,19 @@ class ConnectionDataManager:
         except KeyError, key:
             raise SyntaxError("Syntax error parsing connection data: no %s field" % key)
 
+    @staticmethod
+    def _unparse (recent = None, saved = None):
+        if recent is None:
+            recent = []
+        
+        if saved is None:
+            saved = {}
+
+        return json.dumps ({"recent": recent, "saved": saved},
+                sort_keys=True,
+                separators=(',', ':'))
+
+
     def addRecentConnection (self, connectionData):
         """Saves a connection to the history of recent connections"""
         self.recent.insert(0, connectionData)

@@ -10,10 +10,6 @@ class ConnectionDataFormater:
 
         fmt = '"%s":"%s"'
 
-        self.uri = uri
-        if uri:
-            things.append(fmt % ("uri", uri))
-
         self.bind_dn = bind_dn
         if bind_dn:
             things.append(fmt % ("bind_dn", bind_dn))
@@ -22,12 +18,15 @@ class ConnectionDataFormater:
         if password:
             things.append(fmt % ("password", password))
 
+        self.uri = uri
+        if uri:
+            things.append(fmt % ("uri", uri))
+
         self.name = name
         if name:
             self.json = '"%s":{%s}' % (name, ",".join(things))
         else:
-            self.json = '{%s}' % (",".join(things))
-
+            self.json = "{%s}" % (",".join(things))
 
     def __repr__ (self):
         return self.json
@@ -153,6 +152,42 @@ class ParserTests (unittest.TestCase):
 
     def test_saved_wrong_type (self):
         self.parseWithSyntaxError('{"recent":[],"saved":[]}')
+
+
+
+class UnparserTests (unittest.TestCase):
+    fmt = '{"recent":[%s],"saved":{%s}}'
+
+    def createConnectionDataFormaters (self, numOfRecent = 0, numOfSaved = 0):
+        recent = []
+        for n in range(0, numOfRecent):
+            recent.append(ConnectionDataFormater("ldap://%s.com" % str(n),
+                                                 "cn=%s" % str(n)))
+    
+        saved = {}
+        for c in string.lowercase[:numOfSaved]:
+            saved[c] = ConnectionDataFormater("ldap://%s.com" % str(c),
+                                              "cn=%s" % str(c),
+                                              name = str(c))
+        return recent, saved
+
+    def test_successful_trivial_unparsing (self):
+        expected = UnparserTests.fmt % ("", "")
+        self.assertEqual (expected, ConnectionDataManager._unparse ())
+
+    def test_successful_unparsing (self):
+        recent, saved = self.createConnectionDataFormaters (4, 4)
+        recentStr = ",".join([str(r) for r in recent])
+        savedStr = ",".join(sorted([str(s) for s in saved.itervalues()]))
+
+        data = ConnectionDataManager._unparse (
+                [x.data.save() for x in recent],
+                {k: v.data.save() for k,v in saved.iteritems()})
+        expected = UnparserTests.fmt % (recentStr, savedStr)
+        print data
+        print expected
+        self.assertEqual (expected, data)
+
 
 class ConnectionDataManagerTests (unittest.TestCase):
 
@@ -285,6 +320,18 @@ class ConnectionDataManagerTests (unittest.TestCase):
     def test_getConnections (self):
         manager, _, saved = self.createConnectionManager (numOfSaved = 3)
         self.assertDictEqual (saved, manager.getConnections())
+
+    
+    def test_combining_unparser_and_parser (self):
+        _, recent, saved = self.createConnectionManager (numOfRecent = 4, numOfSaved = 3)
+
+        raw = ConnectionDataManager._unparse (
+                [x.save() for x in recent],
+                {k: v.save() for k, v in saved.iteritems()})
+        newRecent, newSaved = ConnectionDataManager._parse(raw)
+
+        self.assertListEqual (newRecent, recent)
+        self.assertDictEqual (newSaved, saved)
 
 
 class OrdinalsTest (unittest.TestCase):
