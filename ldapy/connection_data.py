@@ -100,6 +100,13 @@ class ConnectionDataManager:
             logger.warning("Error opening file %s: %s" %
                     (ConnectionDataManager.filename, e))
             return [], {}
+    
+    def _unparseAndSaveFile (self):
+        """Unparses the data and saves it to the file specified by
+        ConnectionDataManager.filename"""
+        with open(ConnectionDataManager.filename, "w") as f:
+            raw = ConnectionDataManager._unparse (self.recent, self.saved)
+            f.write (raw)
 
     @staticmethod
     def _parse (raw):

@@ -235,6 +235,40 @@ class ConnectionDataManagerTests (unittest.TestCase):
             self.assertListEqual([], manager.recent)
             self.assertDictEqual({}, manager.saved)
 
+    def test_readAndParseFile_reads_file (self):
+        with mock.patch("__builtin__.open", create=True, auto_spec=True) as mock_open,\
+                mock.patch("ldapy.connection_data.ConnectionDataManager._parse",
+                        spec=ConnectionDataManager._parse) as parserMock:
+
+            mock_open.return_value = mock.MagicMock(spec=file)
+            raw = "testing data!"
+            f = mock_open.return_value.__enter__.return_value
+            f.read.return_value = raw
+
+            ConnectionDataManager._readAndParseFile()
+
+            mock_open.assert_called_once_with (ConnectionDataManager.filename, "r")
+            parserMock.assert_called_once_with (raw)
+
+    def test_unparseAndSaveFile_writes_file (self):
+        manager, recent, saved = self.createConnectionManager (numOfRecent = 3, numOfSaved = 4)
+
+        with mock.patch("__builtin__.open", create=True, auto_spec=True) as mock_open,\
+                mock.patch("ldapy.connection_data.ConnectionDataManager._unparse",
+                        spec=ConnectionDataManager._unparse) as unparserMock:
+
+            mock_open.return_value = mock.MagicMock(spec=file)
+            f = mock_open.return_value.__enter__.return_value
+
+            raw = "testing data!"
+            unparserMock.return_value = raw
+
+            manager._unparseAndSaveFile ()
+
+            mock_open.assert_called_once_with (ConnectionDataManager.filename, "w")
+            unparserMock.assert_called_once_with (recent, saved)
+            f.write.assert_called_once_with (raw)
+
     def test_addRecentConnection (self):
         manager, recent, saved = self.createConnectionManager (numOfRecent = 1)
 
