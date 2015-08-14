@@ -271,6 +271,7 @@ class ConnectionDataManagerTests (unittest.TestCase):
 
     def test_addRecentConnection (self):
         manager, recent, saved = self.createConnectionManager (numOfRecent = 1)
+        manager._unparseAndSaveFile = mock.create_autospec (manager._unparseAndSaveFile)
 
         newConnection = self.createConnectionData ("new")
         manager.addRecentConnection (newConnection)
@@ -278,6 +279,7 @@ class ConnectionDataManagerTests (unittest.TestCase):
         recent.insert(0, newConnection)
         self.assertListEqual(recent, manager.recent)
         self.assertDictEqual(saved, manager.saved)
+        manager._unparseAndSaveFile.assert_called_once_with ()
 
     def test_getRecentConnection_and_getRecentConnections (self):
         N = 10
@@ -309,6 +311,7 @@ class ConnectionDataManagerTests (unittest.TestCase):
 
     def test_saveConnection (self):
         manager, recent, saved = self.createConnectionManager (numOfSaved = 1)
+        manager._unparseAndSaveFile = mock.create_autospec (manager._unparseAndSaveFile)
 
         newKey = "new"
         newConnection = self.createConnectionData (newKey)
@@ -318,9 +321,11 @@ class ConnectionDataManagerTests (unittest.TestCase):
         saved[newKey] = newConnection
         self.assertListEqual(recent, manager.recent)
         self.assertDictEqual(saved, manager.saved)
+        manager._unparseAndSaveFile.assert_called_once_with ()
 
     def test_removeConnection (self):
         manager, recent, saved = self.createConnectionManager (numOfSaved = 3)
+        manager._unparseAndSaveFile = mock.create_autospec (manager._unparseAndSaveFile)
 
         delKey = "b"
         manager.removeConnection (delKey)
@@ -328,12 +333,16 @@ class ConnectionDataManagerTests (unittest.TestCase):
         del saved[delKey]
         self.assertListEqual(recent, manager.recent)
         self.assertDictEqual(saved, manager.saved)
+        manager._unparseAndSaveFile.assert_called_once_with ()
 
     def test_remove_nonexistent_connection (self):
         manager, _, _ = self.createConnectionManager ()
+        manager._unparseAndSaveFile = mock.create_autospec (manager._unparseAndSaveFile)
 
         with self.assertRaises (NoSuchSavedConnection):
             manager.removeConnection ("b")
+
+        self.assertFalse(manager._unparseAndSaveFile.called)
 
     def test_getConnection (self):
         manager, _, saved = self.createConnectionManager (numOfSaved = 3)

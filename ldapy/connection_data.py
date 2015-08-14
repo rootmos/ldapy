@@ -162,6 +162,7 @@ class ConnectionDataManager:
     def addRecentConnection (self, connectionData):
         """Saves a connection to the history of recent connections"""
         self.recent.insert(0, connectionData)
+        self._unparseAndSaveFile ()
 
     def getRecentConnection (self, N = 0):
         """Retrieves the N:th connection in the history"""
@@ -182,11 +183,13 @@ class ConnectionDataManager:
     def saveConnection (self, name, connectionData):
         """Saves a connection to be retrieved by the specified name"""
         self.saved[name] = connectionData
+        self._unparseAndSaveFile ()
     
     def removeConnection (self, name):
         """Removes a previously saved connection by the specified name"""
         try:
             del self.saved[name]
+            self._unparseAndSaveFile ()
         except KeyError:
             raise NoSuchSavedConnection (name)
 
