@@ -5,10 +5,16 @@ from ldapy.node import NodeError
 from ldapy.ldapy import Ldapy, AlreadyAtRoot, SetAttributeError, DeleteError
 from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
 import io
+import tempfile
+from ldapy.connection_data import ConnectionDataManager
 
 class BasicLdapyTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
+
+        # Prepare by setting the historyFile to a temporary file
+        self.historyFile = tempfile.NamedTemporaryFile()
+        ConnectionDataManager.filename = self.historyFile.name
 
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
@@ -160,6 +166,10 @@ class ErrorLdapyTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
+        # Prepare by setting the historyFile to a temporary file
+        self.historyFile = tempfile.NamedTemporaryFile()
+        ConnectionDataManager.filename = self.historyFile.name
+
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
             ldapy = Ldapy(self.con)
@@ -268,7 +278,7 @@ class ArgumentParserTests (unittest.TestCase):
         password = "foobar"
         args = ["-H", host, "-p", str(port), "-D", bind_dn, "-w", password]
 
-        connectionData = ldapy.parseArguments (args)
+        connectionData, _ = ldapy.parseArguments (args)
         self.assertEqual (connectionData.uri, uri)
         self.assertEqual (connectionData.bind_dn, bind_dn)
         self.assertEqual (connectionData.password, password)
@@ -283,7 +293,7 @@ class ArgumentParserTests (unittest.TestCase):
         password = "foobar"
         args = ["ldap://%s:%s" % (host, port), "-D", bind_dn, "-w", password]
 
-        connectionData = ldapy.parseArguments (args)
+        connectionData, _ = ldapy.parseArguments (args)
         self.assertEqual (connectionData.uri, uri)
         self.assertEqual (connectionData.bind_dn, bind_dn)
         self.assertEqual (connectionData.password, password)

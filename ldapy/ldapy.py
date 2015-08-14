@@ -19,7 +19,7 @@ import ldapurl
 import connection
 import exceptions
 import sys
-from connection_data import ConnectionData
+from connection_data import ConnectionData, ConnectionDataManager
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
@@ -45,20 +45,32 @@ class DeleteError (LdapyError):
 
 class Ldapy:
     def __init__ (self, con = None):
+        self._lazyConnectionDataManager = None
+
         if con:
             self.connection = con
         else:
-            connectionData = self.parseArguments ()
+            connectionData, newConnection = self.parseArguments ()
 
             try:
                 self.connection = connection.Connection (connectionData.uri)
                 self.connection.bind (connectionData.bind_dn,
                                       connectionData.password)
+
+                if newConnection:
+                    self.connectionDataManager.addRecentConnection (
+                            connectionData)
             except connection.ConnectionError as e:
                 logger.critical (e)
                 sys.exit (1)
 
         self._cwd = Node (self.connection, "")
+
+    @property
+    def connectionDataManager (self):
+        if not self._lazyConnectionDataManager:
+            self._lazyConnectionDataManager = ConnectionDataManager()
+        return self._lazyConnectionDataManager
 
     @property
     def cwd (self):
@@ -145,7 +157,7 @@ class Ldapy:
         self.setLoggingLevels ()
 
         # Validate the arguments, it will exit the process on errors
-        return self.validateArguments (parser)
+        return self.validateArguments (parser), True
 
 
     def validateArguments (self, parser):

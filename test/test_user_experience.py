@@ -4,10 +4,12 @@ import unittest
 import pexpect
 import os
 import sys
+import tempfile
 from ldapy.connection import Connection
 import configuration
 import random
 import string
+from ldapy.connection_data import ConnectionDataManager
 
 uri = configuration.uri
 host = configuration.host
@@ -20,6 +22,9 @@ def random_value (N=20):
 
 class spawn_ldapy (pexpect.spawn):
     def __init__ (self, args = None, root = None, wait_for_prompt=True):
+        # Prepare by setting the historyFile to a temporary file
+        self.historyFile = tempfile.NamedTemporaryFile()
+
         pwd = os.path.dirname (__file__)
         script = os.path.join (pwd, "../scripts/ldapy")
         coverage = ["coverage", "run", "-p", "--source", os.environ["NOSE_COVER_PACKAGE"], script]
@@ -28,7 +33,8 @@ class spawn_ldapy (pexpect.spawn):
             args = ["-D", bind_dn, "-w", password, uri ]
 
         pexpect.spawn.__init__ (self, " ".join (coverage + args),
-                env = {"PYTHONPATH" : ":".join(sys.path)})
+                env = {"PYTHONPATH" : ":".join(sys.path),
+                    ConnectionDataManager.variable: self.historyFile.name})
 
         if root:
             self.expect_prompt()

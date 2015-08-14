@@ -14,7 +14,7 @@
 # along with ldapy.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-
+import os.path
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
 
@@ -74,12 +74,20 @@ class NoSuchSavedConnection (ConnectionDataManagerError):
     def __init__ (self, name):
         self.msg = NoSuchSavedConnection._msg  % name
 
+def _filename (variable):
+    """Internal function for figuring out the path to the history file"""
+    if variable in os.environ:
+        path = os.environ[variable]
+    else:
+        path = "~/.ldapy_connections"
+    return os.path.expanduser (path)
 
 class ConnectionDataManager:
     """A class for managing ConnectionData items for recent and saved
     connections"""
 
-    filename = "~/.ldapy_connections"
+    variable = "LDAPY_HISTORY"
+    filename = _filename(variable)
 
     def __init__ (self):
         """Initializes the ConnectionDataManager, by parsing the file
@@ -112,6 +120,8 @@ class ConnectionDataManager:
     def _parse (raw):
         """Parses the input data into a tuple:
             (list of recent connections, dictionary of saved connections)"""
+        if not raw:
+            return [], {}
         try:
             logger.debug("Raw data from %s: %s" % (ConnectionDataManager.filename, raw))
             parsed = json.loads(raw)
