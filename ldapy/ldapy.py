@@ -156,6 +156,8 @@ class Ldapy:
         store = parser.add_argument_group('stored connections')
         store.add_argument ("--previous", "-P", type=int, nargs="*", metavar="N",
                 help="Use a previous connection. Lists recent connections if no number is given.")
+        store.add_argument ("--saved", "-S", type=str, nargs="*", metavar="NAME",
+                help="Use a saved connection. Lists saved connections if no arguments are given.")
 
         self.args = parser.parse_args (args)
 
@@ -176,19 +178,39 @@ class Ldapy:
 
         if isinstance(self.args.previous, list):
             if len(self.args.previous) == 0:
+                # Print the connections
                 n = 0
                 for connection in self.connectionDataManager.getRecentConnections():
                     print "%u %s" % (n, connection)
                     n += 1
                 sys.exit (0)
             elif len(self.args.previous) == 1:
+                # Fetch the connection
+                N = self.args.previous[0]
                 try:
-                    return self.connectionDataManager.getRecentConnection (self.args.previous[0]), False
+                    return self.connectionDataManager.getRecentConnection (N), False
                 except ConnectionDataManagerError as e:
                     print >> sys.stderr, e
                     sys.exit(3)
             else:
                 parser.error ("--previous: %s" % Ldapy._too_many_arguments)
+
+        if isinstance(self.args.saved, list):
+            if len(self.args.saved) == 0:
+                # Print the connections
+                for name, connection in sorted(self.connectionDataManager.getConnections().items()):
+                    print "%s %s" % (name, connection)
+                sys.exit (0)
+            elif len(self.args.saved) == 1:
+                # Fetch the connection
+                name = self.args.saved[0]
+                try:
+                    return self.connectionDataManager.getConnection (name), False
+                except ConnectionDataManagerError as e:
+                    print >> sys.stderr, e
+                    sys.exit(3)
+            else:
+                parser.error ("--saved: %s" % Ldapy._too_many_arguments)
 
 
         if not self.args.host and not self.args.URI:
