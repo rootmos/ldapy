@@ -6,7 +6,7 @@ from ldapy.ldapy import Ldapy, AlreadyAtRoot, SetAttributeError, DeleteError
 from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
 import io
 import tempfile
-from ldapy.connection_data import ConnectionData, ConnectionDataManager
+from ldapy.connection_data import *
 
 class BasicLdapyTests (unittest.TestCase):
     def setUp (self):
@@ -293,6 +293,10 @@ class ArgumentParserTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
+        # Prepare by setting the historyFile to a temporary file
+        self.historyFile = tempfile.NamedTemporaryFile()
+        ConnectionDataManager.filename = self.historyFile.name
+
     def test_successful_parse_with_host (self):
         ldapy = Ldapy (self.con)
 
@@ -369,3 +373,61 @@ class ArgumentParserTests (unittest.TestCase):
 
         self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
         self.assertEqual(e.exception.code, 2)
+
+
+    def test_previous_connection (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnection)
+        getter.return_value = {}
+        ldapy.connectionDataManager.getRecentConnection = getter
+
+        N = 7
+        connectionData, new = ldapy.parseArguments (["--previous", "%u" % N])
+
+        getter.assert_called_once_with (N)
+        self.assertIs (connectionData, getter.return_value)
+        self.assertFalse (new)
+
+    def test_no_such_previous_connection (self):
+        ldapy = Ldapy (self.con)
+
+        N = 7
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--previous", "%u" % N])
+
+        msg = str(NoSuchRecentConnection(N))
+        self.assertIn (msg, output.getvalue())
+        self.assertEqual (e.exception.code, 3)
+
+    def test_list_previous_connections (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnections)
+        ldapy.connectionDataManager.getRecentConnections = getter
+
+        a = ConnectionData("ldap://a.com", "cn=a")
+        b = ConnectionData("ldap://b.com", "cn=b")
+        getter.return_value = [a, b]
+
+        with mock.patch ('sys.stdout', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--previous"])
+
+        self.assertEqual (e.exception.code, 0)
+
+        lines = output.getvalue().splitlines()
+        self.assertIn (a.uri, lines[0])
+        self.assertIn (a.bind_dn, lines[0])
+
+        self.assertIn (b.uri, lines[1])
+        self.assertIn (b.bind_dn, lines[1])
+
+    def test_previous_connection_with_too_many_arguments (self):
+        ldapy = Ldapy (self.con)
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--previous", "6", "7"])
+
+        self.assertEqual (e.exception.code, 2)
+        self.assertIn (ldapy._too_many_arguments, output.getvalue())
+

@@ -53,6 +53,8 @@ class ConnectionData:
                 self.bind_dn == other.bind_dn and \
                 self.password == other.password
 
+    def __str__ (self):
+        return "%s, %s" % (self.uri, self.bind_dn)
 
 
 class ConnectionDataManagerError (Exception):
@@ -105,7 +107,7 @@ class ConnectionDataManager:
                 raw = f.read()
                 return ConnectionDataManager._parse(raw)
         except IOError as e:
-            logger.warning("Error opening file %s: %s" %
+            logger.info("Error opening file %s: %s" %
                     (ConnectionDataManager.filename, e))
             return [], {}
     
@@ -140,7 +142,6 @@ class ConnectionDataManager:
 
             # Parse the saved connections
             rawSaved = parsed["saved"]
-            print rawSaved
             if not isinstance(rawSaved, dict):
                 raise SyntaxError("Syntax error: saved element should be a dictionary")
 

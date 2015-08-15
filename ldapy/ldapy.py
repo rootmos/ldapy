@@ -19,7 +19,7 @@ import ldapurl
 import connection
 import exceptions
 import sys
-from connection_data import ConnectionData, ConnectionDataManager
+from connection_data import ConnectionData, ConnectionDataManager, ConnectionDataManagerError
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
@@ -133,6 +133,7 @@ class Ldapy:
     _both_host_and_uri_given = "Both host and URI specified, only one allowed."
     _uri_malformed = "Invalid URI format given."
     _port_is_not_a_valid_number = "Port is not a valid number."
+    _too_many_arguments = "too many arguments given"
 
     def parseArguments (self, args = None, name = "ldapy"):
         parser = argparse.ArgumentParser (prog=name)
@@ -151,14 +152,18 @@ class Ldapy:
                 help="Output more information about what's happening behind the scenes.")
         parser.add_argument ("--debug", "-d", default=False, action="store_true",
                 help="Output all available gruesome debug information.")
+
+        store = parser.add_argument_group('stored connections')
+        store.add_argument ("--previous", "-P", type=int, nargs="*", metavar="N",
+                help="Use a previous connection. Lists recent connections if no number is given.")
+
         self.args = parser.parse_args (args)
 
         # Take this opportunity to set the logging levels as early as possible
         self.setLoggingLevels ()
 
         # Validate the arguments, it will exit the process on errors
-        return self.validateArguments (parser), True
-
+        return self.validateArguments (parser)
 
     def validateArguments (self, parser):
         """Validates the arguments parsed by self.args and exits the process
@@ -166,6 +171,25 @@ class Ldapy:
 
         If it succeeds with the validaton, an ConnectionData object is
         returned with the values given by the parser."""
+
+        logger.debug ("Arguments before validation: %s" % vars(self.args))
+
+        if isinstance(self.args.previous, list):
+            if len(self.args.previous) == 0:
+                n = 0
+                for connection in self.connectionDataManager.getRecentConnections():
+                    print "%u %s" % (n, connection)
+                    n += 1
+                sys.exit (0)
+            elif len(self.args.previous) == 1:
+                try:
+                    return self.connectionDataManager.getRecentConnection (self.args.previous[0]), False
+                except ConnectionDataManagerError as e:
+                    print >> sys.stderr, e
+                    sys.exit(3)
+            else:
+                parser.error ("--previous: %s" % Ldapy._too_many_arguments)
+
 
         if not self.args.host and not self.args.URI:
             parser.error (Ldapy._neither_host_nor_uri_given)
@@ -190,7 +214,7 @@ class Ldapy:
 
         logger.debug ("Arguments: %s" % vars(self.args))
 
-        return ConnectionData (self.args.URI, self.args.bind_dn, self.args.password)
+        return ConnectionData (self.args.URI, self.args.bind_dn, self.args.password), True
 
     def setLoggingLevels (self):
         # Obtain the global ldapy logger
