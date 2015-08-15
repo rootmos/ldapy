@@ -161,6 +161,8 @@ class Ldapy:
                 help="Use a saved connection. Lists saved connections if no arguments are given.")
         store.add_argument ("--save", nargs=2, metavar=("N", "NAME"),
                 help="Saves a previous connection as the name specified.")
+        store.add_argument ("--remove", type=str, metavar="NAME",
+                help="Removes a saved connection with the specified name.")
 
         self.args = parser.parse_args (args)
 
@@ -189,6 +191,14 @@ class Ldapy:
                 sys.exit (0)
             except ValueError:
                 parser.error (self._first_argument_must_be_a_number)
+            except ConnectionDataManagerError as e:
+                print >> sys.stderr, e
+                sys.exit(3)
+
+        if self.args.remove:
+            try:
+                self.connectionDataManager.removeConnection (self.args.remove)
+                sys.exit (0)
             except ConnectionDataManagerError as e:
                 print >> sys.stderr, e
                 sys.exit(3)

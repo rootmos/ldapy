@@ -538,3 +538,30 @@ class ArgumentParserTests (unittest.TestCase):
         self.assertIn (Ldapy._first_argument_must_be_a_number, output.getvalue())
         self.assertEqual (e.exception.code, 2)
 
+
+
+    def test_remove_connection (self):
+        ldapy = Ldapy (self.con)
+
+        remover = mock.create_autospec (ldapy.connectionDataManager.removeConnection)
+        ldapy.connectionDataManager.removeConnection = remover
+
+        name = "foo"
+        with self.assertRaises(SystemExit) as e:
+            ldapy.parseArguments (["--remove", name])
+
+        self.assertEqual (e.exception.code, 0)
+        remover.assert_called_once_with (name)
+
+    def test_remove_with_no_such_connection (self):
+        ldapy = Ldapy (self.con)
+
+        name = "foo"
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--remove", name])
+
+        msg = str(NoSuchSavedConnection(name))
+        self.assertIn (msg, output.getvalue())
+        self.assertEqual (e.exception.code, 3)
+
