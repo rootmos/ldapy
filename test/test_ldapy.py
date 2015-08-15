@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import mock
 import configuration
 from ldapy.node import NodeError
@@ -8,7 +8,7 @@ import io
 import tempfile
 from ldapy.connection_data import *
 
-class BasicLdapyTests (unittest.TestCase):
+class BasicLdapyTests (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -117,7 +117,7 @@ class BasicLdapyTests (unittest.TestCase):
 
         addRecentConnectionMock.assert_called_once_with (ldapy._lazyConnectionDataManager, connectionData)
 
-class ChildCompleter (unittest.TestCase):
+class ChildCompleter (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -173,7 +173,7 @@ class ChildCompleter (unittest.TestCase):
         self.assertListEqual (matches, [])
 
 
-class ErrorLdapyTests (unittest.TestCase):
+class ErrorLdapyTests (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -289,7 +289,7 @@ class ErrorLdapyTests (unittest.TestCase):
                 self.assertFalse (addRecentConnectionMock.called)
 
 
-class ArgumentParserTests (unittest.TestCase):
+class ArgumentParserTests (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 

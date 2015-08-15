@@ -1,11 +1,11 @@
 from ldapy.node import Node, NodeError
 from ldapy.exceptions import DNDecodingError, NoSuchObject, UndefinedType, TypeOrValueExists
-import unittest
+import unittest2
 import mock
 import configuration
 import provisioning
 
-class BasicNodeTests (unittest.TestCase):
+class BasicNodeTests (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -78,7 +78,7 @@ class BasicNodeTests (unittest.TestCase):
             for e in expect:
                 self.assertIn (e, relative)
 
-class ModifyAttributesTests (unittest.TestCase):
+class ModifyAttributesTests (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -238,7 +238,7 @@ class ModifyAttributesTests (unittest.TestCase):
             self.assertListEqual([valueStays], node.attributes[attribute])
 
 
-class DeleteTests (unittest.TestCase):
+class DeleteTests (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -356,7 +356,7 @@ class DeleteTests (unittest.TestCase):
 
             node.delete()
 
-class AddTests (unittest.TestCase):
+class AddTests (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -400,7 +400,7 @@ class AddTests (unittest.TestCase):
                 # Cleanup
                 p.delete (dn)
 
-class NodeErrors (unittest.TestCase):
+class NodeErrors (unittest2.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
 
@@ -426,4 +426,4 @@ class NodeErrors (unittest.TestCase):
             self.assertListEqual([], node.children)
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest2.main()

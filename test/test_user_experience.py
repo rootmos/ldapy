@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import unittest
+import unittest2
 import pexpect
 import os
 import sys
@@ -80,7 +80,7 @@ def execute_with_args_ls_and_expect_root (args, historyFile = None):
                 ldapy.expect (p.root)
                 ldapy.expect_prompt ()
 
-class BasicConnectivity (unittest.TestCase):
+class BasicConnectivity (unittest2.TestCase):
 
     def test_successful_anonymous_connection (self):
         execute_with_args_ls_and_expect_root ([uri])
@@ -92,7 +92,7 @@ class BasicConnectivity (unittest.TestCase):
         execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, "-H", host])
 
 
-class FailedConnectionErrors (unittest.TestCase):
+class FailedConnectionErrors (unittest2.TestCase):
     def test_unknow_host (self):
         bad_uri = "ldap://foobar"
         args = [bad_uri]
@@ -112,7 +112,7 @@ class FailedConnectionErrors (unittest.TestCase):
             ldapy.expect (Connection._server_unwilling)
             ldapy.assert_exitstatus (1)
 
-class LoggingLevels (unittest.TestCase):
+class LoggingLevels (unittest2.TestCase):
     def test_no_logging_when_not_asked (self):
         args = [uri]
         with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
@@ -129,7 +129,7 @@ class LoggingLevels (unittest.TestCase):
         with spawn_ldapy (args=args, wait_for_prompt=False) as ldapy:
             ldapy.expect ("DEBUG")
 
-class NavigationUseCases (unittest.TestCase):
+class NavigationUseCases (unittest2.TestCase):
     def test_cd_and_pwd (self):
         with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
             c = p.container ()
@@ -149,7 +149,7 @@ class NavigationUseCases (unittest.TestCase):
             lines = ldapy.send_command ("pwd")
             self.assertListEqual([p.root], lines)
 
-class CatUseCases (unittest.TestCase):
+class CatUseCases (unittest2.TestCase):
     def test_cat_contains_attributes (self):
         with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
             c = p.container ()
@@ -178,7 +178,7 @@ class CatUseCases (unittest.TestCase):
             self.assertTrue (foundName)
             self.assertTrue (foundObjectClass)
 
-class ModifyUseCases (unittest.TestCase):
+class ModifyUseCases (unittest2.TestCase):
     def verify_attribute (self, ldapy, rdn, attribute, value = None):
         lines = ldapy.send_command ("cat %s" % rdn)
 
@@ -233,7 +233,7 @@ class ModifyUseCases (unittest.TestCase):
             # Verify we have nothing left
             self.assertFalse(self.verify_attribute (ldapy, l.rdn, attribute))
 
-class DeleteUseCases (unittest.TestCase):
+class DeleteUseCases (unittest2.TestCase):
     def test_delete_leaf (self):
         with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
             c = p.container ()
@@ -265,7 +265,7 @@ class DeleteUseCases (unittest.TestCase):
             self.assertFalse(p.exists (d))
 
 
-class AddUseCases (unittest.TestCase):
+class AddUseCases (unittest2.TestCase):
     def test_add (self):
         with configuration.provision() as p, spawn_ldapy(root=p.root) as ldapy:
             c = p.container ()
@@ -296,7 +296,7 @@ class AddUseCases (unittest.TestCase):
             finally:
                 p.delete (dn)
 
-class StoredConnectionUseCases (unittest.TestCase):
+class StoredConnectionUseCases (unittest2.TestCase):
     def test_store_connection (self):
         historyFile = tempfile.NamedTemporaryFile()
 

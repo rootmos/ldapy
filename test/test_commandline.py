@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import unittest
+import unittest2
 import mock
 import pexpect
 import os
@@ -8,7 +8,7 @@ import sys
 import syslog
 from ldapy.commandline import Commandline, Command, NoSuchCommand, ExitCommand
 
-class Parser (unittest.TestCase):
+class Parser (unittest2.TestCase):
 
     def test_empty_line (self):
         cli = Commandline ([])
@@ -104,7 +104,7 @@ class Parser (unittest.TestCase):
         cmd.usage.reset_mock ()
 
 
-class BasicFunctionality (unittest.TestCase):
+class BasicFunctionality (unittest2.TestCase):
 
     def test_exit (self):
         cli = Commandline ([])
@@ -198,7 +198,7 @@ class TrivialCommandline:
         cli = Commandline ([])
         cli.loop ()
 
-class Completer (unittest.TestCase):
+class Completer (unittest2.TestCase):
 
     def test_completer_called (self):
         child = create_sut_process (Completer, Completer.sut_completer_called)

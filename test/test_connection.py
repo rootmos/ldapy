@@ -1,13 +1,13 @@
 from ldapy.connection import Connection, ConnectionError, scopeBase
 from ldapy.exceptions import LdapError, NoSuchObject, AlreadyExists, UndefinedType, TypeOrValueExists
-import unittest
+import unittest2
 import mock
 import ldap
 import ldap.ldapobject
 import ldap.modlist
 import configuration
 
-class BasicConnection(unittest.TestCase):
+class BasicConnection(unittest2.TestCase):
 
     def setUp (self):
         self.con = Connection (configuration.uri)
@@ -21,7 +21,7 @@ class BasicConnection(unittest.TestCase):
         self.con.bind (configuration.admin, configuration.admin_password)
         self.assertTrue (self.con.connected)
 
-class Utilities (unittest.TestCase):
+class Utilities (unittest2.TestCase):
     def setUp (self):
         self.con = Connection (configuration.uri)
         self.con.bind (configuration.admin, configuration.admin_password)
@@ -31,7 +31,7 @@ class Utilities (unittest.TestCase):
         with configuration.provision() as p:
             self.assertIn (p.root, self.con.roots)
 
-class Operations (unittest.TestCase):
+class Operations (unittest2.TestCase):
     def setUp (self):
         self.con = Connection (configuration.uri)
         self.con.bind (configuration.admin, configuration.admin_password)
@@ -89,7 +89,7 @@ class Operations (unittest.TestCase):
         self.assertEqual (str(expect), str(received.exception))
 
 
-class AddTests (unittest.TestCase):
+class AddTests (unittest2.TestCase):
     def setUp (self):
         self.con = Connection (configuration.uri)
         self.con.bind (configuration.admin, configuration.admin_password)
@@ -168,7 +168,7 @@ class AddTests (unittest.TestCase):
             self.assertIn (value, str(received.exception))
             self.assertIn (attribute, str(received.exception))
 
-class ConnectionErrors (unittest.TestCase):
+class ConnectionErrors (unittest2.TestCase):
 
     def test_bind_connect_error (self):
         bad_uri = "ldap://foobar"
@@ -193,4 +193,4 @@ class ConnectionErrors (unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest2.main()

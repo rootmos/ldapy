@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import mock
 import json
 import string
@@ -43,7 +43,7 @@ class ConnectionDataFormater:
         return json.loads(self.json)
 
 
-class ConnectionDataTests (unittest.TestCase):
+class ConnectionDataTests (unittest2.TestCase):
     def test_successful_ConnectionData_load (self):
         data = ConnectionDataFormater(
                 uri = "ldap://foobar.com",
@@ -87,7 +87,7 @@ class ConnectionDataTests (unittest.TestCase):
         self.assertDictEqual (expected, data.data.save())
 
 
-class ParserTests (unittest.TestCase):
+class ParserTests (unittest2.TestCase):
 
     def test_successful_trivial_parsing (self):
         trivialData = '{"recent":[],"saved":{}}'
@@ -155,7 +155,7 @@ class ParserTests (unittest.TestCase):
 
 
 
-class UnparserTests (unittest.TestCase):
+class UnparserTests (unittest2.TestCase):
     fmt = '{"recent":[%s],"saved":{%s}}'
 
     def createConnectionDataFormaters (self, numOfRecent = 0, numOfSaved = 0):
@@ -189,7 +189,7 @@ class UnparserTests (unittest.TestCase):
         self.assertEqual (expected, data)
 
 
-class ConnectionDataManagerTests (unittest.TestCase):
+class ConnectionDataManagerTests (unittest2.TestCase):
 
     def createConnectionData (self, token):
         return ConnectionData("ldap://%s.com" % str(token), "cn=%s" % str(token))
@@ -375,7 +375,7 @@ class ConnectionDataManagerTests (unittest.TestCase):
         self.assertDictEqual (newSaved, saved)
 
 
-class OrdinalsTest (unittest.TestCase):
+class OrdinalsTest (unittest2.TestCase):
     def test_ordinals (self):
         tests = [(1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th"),
                  (12, "12th"), (13, "13th"),
