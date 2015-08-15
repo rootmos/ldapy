@@ -288,6 +288,11 @@ class ErrorLdapyTests (unittest2.TestCase):
                 except SystemExit:
                     self.assertFalse (addRecentConnectionMock.called)
 
+def assertSystemExitStatus (test, e, code):
+    if hasattr(e, "code"):
+        test.assertEqual (e.code, code)
+    else:
+        test.assertEqual (e, code)
 
 class ArgumentParserTests (unittest2.TestCase):
     def setUp (self):
@@ -335,7 +340,7 @@ class ArgumentParserTests (unittest2.TestCase):
                 ldapy.parseArguments ([])
 
         self.assertIn(ldapy._neither_host_nor_uri_given, output.getvalue())
-        self.assertEqual(e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
 
     def test_both_host_and_uri_is_specified (self):
         ldapy = Ldapy (self.con)
@@ -345,7 +350,7 @@ class ArgumentParserTests (unittest2.TestCase):
                 ldapy.parseArguments (["-H", "foo", "ldap://bar"])
 
         self.assertIn(ldapy._both_host_and_uri_given, output.getvalue())
-        self.assertEqual(e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
 
     def test_malformed_uri (self):
         ldapy = Ldapy (self.con)
@@ -355,7 +360,7 @@ class ArgumentParserTests (unittest2.TestCase):
                 ldapy.parseArguments (["foobar://lars"])
 
         self.assertIn(ldapy._uri_malformed, output.getvalue())
-        self.assertEqual(e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
 
     def test_port_invalid_number (self):
         ldapy = Ldapy (self.con)
@@ -365,14 +370,14 @@ class ArgumentParserTests (unittest2.TestCase):
                 ldapy.parseArguments (["-H", "foo", "-p", "-1"])
 
         self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
-        self.assertEqual(e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
 
         with mock.patch('sys.stderr', new_callable=io.BytesIO) as output:
             with self.assertRaises(SystemExit) as e:
                 ldapy.parseArguments (["-H", "foo", "-p", str(0xffff + 1)])
 
         self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
-        self.assertEqual(e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
 
 
     def test_previous_connection (self):
@@ -398,7 +403,7 @@ class ArgumentParserTests (unittest2.TestCase):
 
         msg = str(NoSuchRecentConnection(N))
         self.assertIn (msg, output.getvalue())
-        self.assertEqual (e.exception.code, 3)
+        assertSystemExitStatus(self, e.exception, 3)
 
     def test_list_previous_connections (self):
         ldapy = Ldapy (self.con)
@@ -413,7 +418,7 @@ class ArgumentParserTests (unittest2.TestCase):
             with self.assertRaises(SystemExit) as e:
                 ldapy.parseArguments (["-P"])
 
-        self.assertEqual (e.exception.code, 0)
+        assertSystemExitStatus(self, e.exception, 0)
 
         lines = output.getvalue().splitlines()
         self.assertIn (a.uri, lines[0])
@@ -428,7 +433,7 @@ class ArgumentParserTests (unittest2.TestCase):
             with self.assertRaises(SystemExit) as e:
                 ldapy.parseArguments (["--previous", "6", "7"])
 
-        self.assertEqual (e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
         self.assertIn (ldapy._too_many_arguments, output.getvalue())
 
 
@@ -455,7 +460,7 @@ class ArgumentParserTests (unittest2.TestCase):
 
         msg = str(NoSuchSavedConnection(name))
         self.assertIn (msg, output.getvalue())
-        self.assertEqual (e.exception.code, 3)
+        assertSystemExitStatus(self, e.exception, 3)
 
     def test_list_saved_connections (self):
         ldapy = Ldapy (self.con)
@@ -474,7 +479,7 @@ class ArgumentParserTests (unittest2.TestCase):
             with self.assertRaises(SystemExit) as e:
                 ldapy.parseArguments (["--saved"])
 
-        self.assertEqual (e.exception.code, 0)
+        assertSystemExitStatus(self, e.exception, 0)
 
         lines = output.getvalue().splitlines()
         self.assertIn (nameA, lines[0])
@@ -491,7 +496,7 @@ class ArgumentParserTests (unittest2.TestCase):
             with self.assertRaises(SystemExit) as e:
                 ldapy.parseArguments (["--saved", "foo", "bar"])
 
-        self.assertEqual (e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
         self.assertIn (ldapy._too_many_arguments, output.getvalue())
 
 
@@ -511,7 +516,7 @@ class ArgumentParserTests (unittest2.TestCase):
         with self.assertRaises(SystemExit) as e:
             ldapy.parseArguments (["--save", str(N), name])
 
-        self.assertEqual (e.exception.code, 0)
+        assertSystemExitStatus(self, e.exception, 0)
         getter.assert_called_once_with (N)
         saver.assert_called_once_with (name, getter.return_value)
 
@@ -526,7 +531,7 @@ class ArgumentParserTests (unittest2.TestCase):
 
         msg = str(NoSuchRecentConnection(N))
         self.assertIn (msg, output.getvalue())
-        self.assertEqual (e.exception.code, 3)
+        assertSystemExitStatus(self, e.exception, 3)
 
     def test_save_with_not_a_number (self):
         ldapy = Ldapy (self.con)
@@ -536,7 +541,7 @@ class ArgumentParserTests (unittest2.TestCase):
                 ldapy.parseArguments (["--save", "foo", "bar"])
 
         self.assertIn (Ldapy._first_argument_must_be_a_number, output.getvalue())
-        self.assertEqual (e.exception.code, 2)
+        assertSystemExitStatus(self, e.exception, 2)
 
 
 
@@ -550,7 +555,7 @@ class ArgumentParserTests (unittest2.TestCase):
         with self.assertRaises(SystemExit) as e:
             ldapy.parseArguments (["--remove", name])
 
-        self.assertEqual (e.exception.code, 0)
+        assertSystemExitStatus(self, e.exception, 0)
         remover.assert_called_once_with (name)
 
     def test_remove_with_no_such_connection (self):
@@ -563,7 +568,7 @@ class ArgumentParserTests (unittest2.TestCase):
 
         msg = str(NoSuchSavedConnection(name))
         self.assertIn (msg, output.getvalue())
-        self.assertEqual (e.exception.code, 3)
+        assertSystemExitStatus(self, e.exception, 3)
 
 
     def test_no_uri_or_host_defaults_to_last_connection (self):
