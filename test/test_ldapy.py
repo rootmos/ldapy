@@ -6,7 +6,7 @@ from ldapy.ldapy import Ldapy, AlreadyAtRoot, SetAttributeError, DeleteError
 from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
 import io
 import tempfile
-from ldapy.connection_data import ConnectionDataManager
+from ldapy.connection_data import ConnectionData, ConnectionDataManager
 
 class BasicLdapyTests (unittest.TestCase):
     def setUp (self):
@@ -105,6 +105,17 @@ class BasicLdapyTests (unittest.TestCase):
 
             addMock.assert_called_once_with (cwd, rdn, attr)
 
+    def test_successful_connection_calls_addRecentConnection (self):
+        connectionData = ConnectionData (configuration.uri,
+                configuration.admin,
+                configuration.admin_password)
+        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock,\
+                mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
+            parseArgumentsMock.return_value = (connectionData, True)
+
+            ldapy = Ldapy()
+
+        addRecentConnectionMock.assert_called_once_with (ldapy._lazyConnectionDataManager, connectionData)
 
 class ChildCompleter (unittest.TestCase):
     def setUp (self):
@@ -262,6 +273,20 @@ class ErrorLdapyTests (unittest.TestCase):
 
             self.assertEqual (received.exception.msg, testMessage)
             self.assertEqual (str(received.exception), testMessage)
+
+    def test_failed_connection_does_not_call_addRecentConnection (self):
+        connectionData = ConnectionData ("ldap://foo", configuration.admin, configuration.admin_password)
+        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock,\
+                mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
+            parseArgumentsMock.return_value = (connectionData, True)
+
+            try:
+                ldapy = Ldapy()
+
+                # Expect that Ldapy's constructor calls sys.exit
+                self.assertTrue(False)
+            except SystemExit:
+                self.assertFalse (addRecentConnectionMock.called)
 
 
 class ArgumentParserTests (unittest.TestCase):
