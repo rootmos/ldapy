@@ -5,10 +5,16 @@ from ldapy.node import NodeError
 from ldapy.ldapy import Ldapy, AlreadyAtRoot, SetAttributeError, DeleteError
 from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
 import io
+import tempfile
+from ldapy.connection_data import *
 
 class BasicLdapyTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
+
+        # Prepare by setting the historyFile to a temporary file
+        self.historyFile = tempfile.NamedTemporaryFile()
+        ConnectionDataManager.filename = self.historyFile.name
 
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
@@ -99,6 +105,17 @@ class BasicLdapyTests (unittest.TestCase):
 
             addMock.assert_called_once_with (cwd, rdn, attr)
 
+    def test_successful_connection_calls_addRecentConnection (self):
+        connectionData = ConnectionData (configuration.uri,
+                configuration.admin,
+                configuration.admin_password)
+        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock,\
+                mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
+            parseArgumentsMock.return_value = (connectionData, True)
+
+            ldapy = Ldapy()
+
+        addRecentConnectionMock.assert_called_once_with (ldapy._lazyConnectionDataManager, connectionData)
 
 class ChildCompleter (unittest.TestCase):
     def setUp (self):
@@ -159,6 +176,10 @@ class ChildCompleter (unittest.TestCase):
 class ErrorLdapyTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
+
+        # Prepare by setting the historyFile to a temporary file
+        self.historyFile = tempfile.NamedTemporaryFile()
+        ConnectionDataManager.filename = self.historyFile.name
 
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
@@ -253,10 +274,28 @@ class ErrorLdapyTests (unittest.TestCase):
             self.assertEqual (received.exception.msg, testMessage)
             self.assertEqual (str(received.exception), testMessage)
 
+    def test_failed_connection_does_not_call_addRecentConnection (self):
+        connectionData = ConnectionData ("ldap://foo", configuration.admin, configuration.admin_password)
+        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock,\
+                mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
+            parseArgumentsMock.return_value = (connectionData, True)
+
+            try:
+                ldapy = Ldapy()
+
+                # Expect that Ldapy's constructor calls sys.exit
+                self.assertTrue(False)
+            except SystemExit:
+                self.assertFalse (addRecentConnectionMock.called)
+
 
 class ArgumentParserTests (unittest.TestCase):
     def setUp (self):
         self.con = configuration.getConnection ()
+
+        # Prepare by setting the historyFile to a temporary file
+        self.historyFile = tempfile.NamedTemporaryFile()
+        ConnectionDataManager.filename = self.historyFile.name
 
     def test_successful_parse_with_host (self):
         ldapy = Ldapy (self.con)
@@ -268,7 +307,7 @@ class ArgumentParserTests (unittest.TestCase):
         password = "foobar"
         args = ["-H", host, "-p", str(port), "-D", bind_dn, "-w", password]
 
-        connectionData = ldapy.parseArguments (args)
+        connectionData, _ = ldapy.parseArguments (args)
         self.assertEqual (connectionData.uri, uri)
         self.assertEqual (connectionData.bind_dn, bind_dn)
         self.assertEqual (connectionData.password, password)
@@ -283,12 +322,12 @@ class ArgumentParserTests (unittest.TestCase):
         password = "foobar"
         args = ["ldap://%s:%s" % (host, port), "-D", bind_dn, "-w", password]
 
-        connectionData = ldapy.parseArguments (args)
+        connectionData, _ = ldapy.parseArguments (args)
         self.assertEqual (connectionData.uri, uri)
         self.assertEqual (connectionData.bind_dn, bind_dn)
         self.assertEqual (connectionData.password, password)
 
-    def test_neither_host_nor_uri_is_specified (self):
+    def test_neither_host_nor_uri_is_specified_and_no_recent_connection (self):
         ldapy = Ldapy (self.con)
 
         with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
@@ -334,3 +373,208 @@ class ArgumentParserTests (unittest.TestCase):
 
         self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
         self.assertEqual(e.exception.code, 2)
+
+
+    def test_previous_connection (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnection)
+        getter.return_value = {}
+        ldapy.connectionDataManager.getRecentConnection = getter
+
+        N = 7
+        connectionData, new = ldapy.parseArguments (["--previous", str(N)])
+
+        getter.assert_called_once_with (N)
+        self.assertIs (connectionData, getter.return_value)
+        self.assertFalse (new)
+
+    def test_no_such_previous_connection (self):
+        ldapy = Ldapy (self.con)
+
+        N = 7
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--previous", str(N)])
+
+        msg = str(NoSuchRecentConnection(N))
+        self.assertIn (msg, output.getvalue())
+        self.assertEqual (e.exception.code, 3)
+
+    def test_list_previous_connections (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnections)
+        ldapy.connectionDataManager.getRecentConnections = getter
+
+        a = ConnectionData("ldap://a.com", "cn=a")
+        b = ConnectionData("ldap://b.com", "cn=b")
+        getter.return_value = [a, b]
+
+        with mock.patch ('sys.stdout', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["-P"])
+
+        self.assertEqual (e.exception.code, 0)
+
+        lines = output.getvalue().splitlines()
+        self.assertIn (a.uri, lines[0])
+        self.assertIn (a.bind_dn, lines[0])
+
+        self.assertIn (b.uri, lines[1])
+        self.assertIn (b.bind_dn, lines[1])
+
+    def test_previous_connection_with_too_many_arguments (self):
+        ldapy = Ldapy (self.con)
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--previous", "6", "7"])
+
+        self.assertEqual (e.exception.code, 2)
+        self.assertIn (ldapy._too_many_arguments, output.getvalue())
+
+
+    def test_saved_connection (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getConnection)
+        getter.return_value = {}
+        ldapy.connectionDataManager.getConnection = getter
+
+        name = "foo"
+        connectionData, new = ldapy.parseArguments (["--saved", name])
+
+        getter.assert_called_once_with (name)
+        self.assertIs (connectionData, getter.return_value)
+        self.assertFalse (new)
+
+    def test_no_such_saved_connection (self):
+        ldapy = Ldapy (self.con)
+
+        name = "foo"
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["-S", name])
+
+        msg = str(NoSuchSavedConnection(name))
+        self.assertIn (msg, output.getvalue())
+        self.assertEqual (e.exception.code, 3)
+
+    def test_list_saved_connections (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getConnections)
+        ldapy.connectionDataManager.getConnections = getter
+
+        nameA = "nameA"
+        a = ConnectionData("ldap://a.com", "cn=a")
+
+        nameB = "nameB"
+        b = ConnectionData("ldap://b.com", "cn=b")
+
+        getter.return_value = {nameA:a, nameB:b}
+
+        with mock.patch ('sys.stdout', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--saved"])
+
+        self.assertEqual (e.exception.code, 0)
+
+        lines = output.getvalue().splitlines()
+        self.assertIn (nameA, lines[0])
+        self.assertIn (a.uri, lines[0])
+        self.assertIn (a.bind_dn, lines[0])
+
+        self.assertIn (nameB, lines[1])
+        self.assertIn (b.uri, lines[1])
+        self.assertIn (b.bind_dn, lines[1])
+
+    def test_saved_connection_with_too_many_arguments (self):
+        ldapy = Ldapy (self.con)
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--saved", "foo", "bar"])
+
+        self.assertEqual (e.exception.code, 2)
+        self.assertIn (ldapy._too_many_arguments, output.getvalue())
+
+
+
+    def test_save_connection (self):
+        ldapy = Ldapy (self.con)
+
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnection)
+        getter.return_value = {}
+        ldapy.connectionDataManager.getRecentConnection = getter
+
+        saver = mock.create_autospec (ldapy.connectionDataManager.saveConnection)
+        ldapy.connectionDataManager.saveConnection = saver
+
+        N = 7
+        name = "foo"
+        with self.assertRaises(SystemExit) as e:
+            ldapy.parseArguments (["--save", str(N), name])
+
+        self.assertEqual (e.exception.code, 0)
+        getter.assert_called_once_with (N)
+        saver.assert_called_once_with (name, getter.return_value)
+
+    def test_save_with_no_such_connection (self):
+        ldapy = Ldapy (self.con)
+
+        N = 7
+        name = "foo"
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--save", str(N), name])
+
+        msg = str(NoSuchRecentConnection(N))
+        self.assertIn (msg, output.getvalue())
+        self.assertEqual (e.exception.code, 3)
+
+    def test_save_with_not_a_number (self):
+        ldapy = Ldapy (self.con)
+
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--save", "foo", "bar"])
+
+        self.assertIn (Ldapy._first_argument_must_be_a_number, output.getvalue())
+        self.assertEqual (e.exception.code, 2)
+
+
+
+    def test_remove_connection (self):
+        ldapy = Ldapy (self.con)
+
+        remover = mock.create_autospec (ldapy.connectionDataManager.removeConnection)
+        ldapy.connectionDataManager.removeConnection = remover
+
+        name = "foo"
+        with self.assertRaises(SystemExit) as e:
+            ldapy.parseArguments (["--remove", name])
+
+        self.assertEqual (e.exception.code, 0)
+        remover.assert_called_once_with (name)
+
+    def test_remove_with_no_such_connection (self):
+        ldapy = Ldapy (self.con)
+
+        name = "foo"
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--remove", name])
+
+        msg = str(NoSuchSavedConnection(name))
+        self.assertIn (msg, output.getvalue())
+        self.assertEqual (e.exception.code, 3)
+
+
+    def test_no_uri_or_host_defaults_to_last_connection (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnection)
+        getter.return_value = {}
+        ldapy.connectionDataManager.getRecentConnection = getter
+
+        connectionData, new = ldapy.parseArguments ([])
+
+        getter.assert_called_once_with ()
+        self.assertIs (connectionData, getter.return_value)
+        self.assertFalse (new)
+

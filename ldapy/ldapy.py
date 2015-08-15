@@ -19,6 +19,7 @@ import ldapurl
 import connection
 import exceptions
 import sys
+from connection_data import ConnectionData, ConnectionDataManager, ConnectionDataManagerError
 
 import logging
 logger = logging.getLogger("ldapy.%s" % __name__)
@@ -42,28 +43,34 @@ class DeleteError (LdapyError):
     def __init__ (self, msg):
         self.msg = msg
 
-class ConnectionData:
-    def __init__ (self, uri, bind_dn, password = None):
-        self.uri = uri
-        self.bind_dn = bind_dn
-        self.password = password
-
 class Ldapy:
     def __init__ (self, con = None):
+        self._lazyConnectionDataManager = None
+
         if con:
             self.connection = con
         else:
-            connectionData = self.parseArguments ()
+            connectionData, newConnection = self.parseArguments ()
 
             try:
                 self.connection = connection.Connection (connectionData.uri)
                 self.connection.bind (connectionData.bind_dn,
                                       connectionData.password)
+
+                if newConnection:
+                    self.connectionDataManager.addRecentConnection (
+                            connectionData)
             except connection.ConnectionError as e:
                 logger.critical (e)
                 sys.exit (1)
 
         self._cwd = Node (self.connection, "")
+
+    @property
+    def connectionDataManager (self):
+        if not self._lazyConnectionDataManager:
+            self._lazyConnectionDataManager = ConnectionDataManager()
+        return self._lazyConnectionDataManager
 
     @property
     def cwd (self):
@@ -126,6 +133,8 @@ class Ldapy:
     _both_host_and_uri_given = "Both host and URI specified, only one allowed."
     _uri_malformed = "Invalid URI format given."
     _port_is_not_a_valid_number = "Port is not a valid number."
+    _too_many_arguments = "too many arguments given"
+    _first_argument_must_be_a_number = "first argument to --save must be a number"
 
     def parseArguments (self, args = None, name = "ldapy"):
         parser = argparse.ArgumentParser (prog=name)
@@ -144,6 +153,17 @@ class Ldapy:
                 help="Output more information about what's happening behind the scenes.")
         parser.add_argument ("--debug", "-d", default=False, action="store_true",
                 help="Output all available gruesome debug information.")
+
+        store = parser.add_argument_group('stored connections')
+        store.add_argument ("--previous", "-P", type=int, nargs="*", metavar="N",
+                help="Use a previous connection. Lists recent connections if no number is given.")
+        store.add_argument ("--saved", "-S", type=str, nargs="*", metavar="NAME",
+                help="Use a saved connection. Lists saved connections if no arguments are given.")
+        store.add_argument ("--save", nargs=2, metavar=("N", "NAME"),
+                help="Saves a previous connection as the name specified.")
+        store.add_argument ("--remove", type=str, metavar="NAME",
+                help="Removes a saved connection with the specified name.")
+
         self.args = parser.parse_args (args)
 
         # Take this opportunity to set the logging levels as early as possible
@@ -152,16 +172,86 @@ class Ldapy:
         # Validate the arguments, it will exit the process on errors
         return self.validateArguments (parser)
 
-
     def validateArguments (self, parser):
         """Validates the arguments parsed by self.args and exits the process
         with the parser's error function if an error is found.
 
-        If it succeeds with the validaton, an ConnectionData object is
-        returned with the values given by the parser."""
+        If it succeeds with the validation, a tuple is returned with a
+        ConnectionData object and a boolean indicating if it's a new connection
+        or not (ie if it should be saved or not)"""
 
+        logger.debug ("Arguments before validation: %s" % vars(self.args))
+
+        # Execute the --save command
+        if self.args.save:
+            try:
+                N = int(self.args.save[0])
+                connection = self.connectionDataManager.getRecentConnection (N)
+
+                name = self.args.save[1]
+                self.connectionDataManager.saveConnection (name, connection)
+                sys.exit (0)
+            except ValueError:
+                parser.error (self._first_argument_must_be_a_number)
+            except ConnectionDataManagerError as e:
+                print >> sys.stderr, e
+                sys.exit(3)
+
+        # Execute the --remove command
+        if self.args.remove:
+            try:
+                self.connectionDataManager.removeConnection (self.args.remove)
+                sys.exit (0)
+            except ConnectionDataManagerError as e:
+                print >> sys.stderr, e
+                sys.exit(3)
+
+        # Execute the --previous command
+        if isinstance(self.args.previous, list):
+            if len(self.args.previous) == 0:
+                # Print the connections
+                n = 0
+                for connection in self.connectionDataManager.getRecentConnections():
+                    print "%u %s" % (n, connection)
+                    n += 1
+                sys.exit (0)
+            elif len(self.args.previous) == 1:
+                # Fetch the connection
+                N = self.args.previous[0]
+                try:
+                    return self.connectionDataManager.getRecentConnection (N), False
+                except ConnectionDataManagerError as e:
+                    print >> sys.stderr, e
+                    sys.exit(3)
+            else:
+                parser.error ("--previous: %s" % Ldapy._too_many_arguments)
+
+        # Execute the --saved command
+        if isinstance(self.args.saved, list):
+            if len(self.args.saved) == 0:
+                # Print the connections
+                for name, connection in sorted(self.connectionDataManager.getConnections().items()):
+                    print "%s %s" % (name, connection)
+                sys.exit (0)
+            elif len(self.args.saved) == 1:
+                # Fetch the connection
+                name = self.args.saved[0]
+                try:
+                    return self.connectionDataManager.getConnection (name), False
+                except ConnectionDataManagerError as e:
+                    print >> sys.stderr, e
+                    sys.exit(3)
+            else:
+                parser.error ("--saved: %s" % Ldapy._too_many_arguments)
+
+    
+        # If no host information was given we default to using the previous connection
         if not self.args.host and not self.args.URI:
-            parser.error (Ldapy._neither_host_nor_uri_given)
+            try:
+                connection = self.connectionDataManager.getRecentConnection()
+                return connection, False
+            except ConnectionDataManagerError:
+                parser.error (Ldapy._neither_host_nor_uri_given)
 
         if self.args.host and self.args.URI:
             parser.error (Ldapy._both_host_and_uri_given)
@@ -183,7 +273,7 @@ class Ldapy:
 
         logger.debug ("Arguments: %s" % vars(self.args))
 
-        return ConnectionData (self.args.URI, self.args.bind_dn, self.args.password)
+        return ConnectionData (self.args.URI, self.args.bind_dn, self.args.password), True
 
     def setLoggingLevels (self):
         # Obtain the global ldapy logger
