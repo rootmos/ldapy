@@ -327,7 +327,7 @@ class ArgumentParserTests (unittest.TestCase):
         self.assertEqual (connectionData.bind_dn, bind_dn)
         self.assertEqual (connectionData.password, password)
 
-    def test_neither_host_nor_uri_is_specified (self):
+    def test_neither_host_nor_uri_is_specified_and_no_recent_connection (self):
         ldapy = Ldapy (self.con)
 
         with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
@@ -564,4 +564,17 @@ class ArgumentParserTests (unittest.TestCase):
         msg = str(NoSuchSavedConnection(name))
         self.assertIn (msg, output.getvalue())
         self.assertEqual (e.exception.code, 3)
+
+
+    def test_no_uri_or_host_defaults_to_last_connection (self):
+        ldapy = Ldapy (self.con)
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnection)
+        getter.return_value = {}
+        ldapy.connectionDataManager.getRecentConnection = getter
+
+        connectionData, new = ldapy.parseArguments ([])
+
+        getter.assert_called_once_with ()
+        self.assertIs (connectionData, getter.return_value)
+        self.assertFalse (new)
 

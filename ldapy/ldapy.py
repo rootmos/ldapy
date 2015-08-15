@@ -176,11 +176,13 @@ class Ldapy:
         """Validates the arguments parsed by self.args and exits the process
         with the parser's error function if an error is found.
 
-        If it succeeds with the validaton, an ConnectionData object is
-        returned with the values given by the parser."""
+        If it succeeds with the validation, a tuple is returned with a
+        ConnectionData object and a boolean indicating if it's a new connection
+        or not (ie if it should be saved or not)"""
 
         logger.debug ("Arguments before validation: %s" % vars(self.args))
 
+        # Execute the --save command
         if self.args.save:
             try:
                 N = int(self.args.save[0])
@@ -195,6 +197,7 @@ class Ldapy:
                 print >> sys.stderr, e
                 sys.exit(3)
 
+        # Execute the --remove command
         if self.args.remove:
             try:
                 self.connectionDataManager.removeConnection (self.args.remove)
@@ -203,6 +206,7 @@ class Ldapy:
                 print >> sys.stderr, e
                 sys.exit(3)
 
+        # Execute the --previous command
         if isinstance(self.args.previous, list):
             if len(self.args.previous) == 0:
                 # Print the connections
@@ -222,6 +226,7 @@ class Ldapy:
             else:
                 parser.error ("--previous: %s" % Ldapy._too_many_arguments)
 
+        # Execute the --saved command
         if isinstance(self.args.saved, list):
             if len(self.args.saved) == 0:
                 # Print the connections
@@ -239,9 +244,14 @@ class Ldapy:
             else:
                 parser.error ("--saved: %s" % Ldapy._too_many_arguments)
 
-
+    
+        # If no host information was given we default to using the previous connection
         if not self.args.host and not self.args.URI:
-            parser.error (Ldapy._neither_host_nor_uri_given)
+            try:
+                connection = self.connectionDataManager.getRecentConnection()
+                return connection, False
+            except ConnectionDataManagerError:
+                parser.error (Ldapy._neither_host_nor_uri_given)
 
         if self.args.host and self.args.URI:
             parser.error (Ldapy._both_host_and_uri_given)
