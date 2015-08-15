@@ -63,5 +63,5 @@ Wishlist
 * Allow combinations of stored connections and specified connection data
 * Rename and move DNs
 * Wildcards
-* Release 0.1 :)
+* Compatibility with Python3
 
