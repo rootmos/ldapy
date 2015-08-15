@@ -494,3 +494,47 @@ class ArgumentParserTests (unittest.TestCase):
         self.assertEqual (e.exception.code, 2)
         self.assertIn (ldapy._too_many_arguments, output.getvalue())
 
+
+
+    def test_save_connection (self):
+        ldapy = Ldapy (self.con)
+
+        getter = mock.create_autospec (ldapy.connectionDataManager.getRecentConnection)
+        getter.return_value = {}
+        ldapy.connectionDataManager.getRecentConnection = getter
+
+        saver = mock.create_autospec (ldapy.connectionDataManager.saveConnection)
+        ldapy.connectionDataManager.saveConnection = saver
+
+        N = 7
+        name = "foo"
+        with self.assertRaises(SystemExit) as e:
+            ldapy.parseArguments (["--save", str(N), name])
+
+        self.assertEqual (e.exception.code, 0)
+        getter.assert_called_once_with (N)
+        saver.assert_called_once_with (name, getter.return_value)
+
+    def test_save_with_no_such_connection (self):
+        ldapy = Ldapy (self.con)
+
+        N = 7
+        name = "foo"
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--save", str(N), name])
+
+        msg = str(NoSuchRecentConnection(N))
+        self.assertIn (msg, output.getvalue())
+        self.assertEqual (e.exception.code, 3)
+
+    def test_save_with_not_a_number (self):
+        ldapy = Ldapy (self.con)
+
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
+                self.assertRaises(SystemExit) as e:
+                    ldapy.parseArguments (["--save", "foo", "bar"])
+
+        self.assertIn (Ldapy._first_argument_must_be_a_number, output.getvalue())
+        self.assertEqual (e.exception.code, 2)
+

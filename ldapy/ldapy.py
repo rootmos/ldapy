@@ -134,6 +134,7 @@ class Ldapy:
     _uri_malformed = "Invalid URI format given."
     _port_is_not_a_valid_number = "Port is not a valid number."
     _too_many_arguments = "too many arguments given"
+    _first_argument_must_be_a_number = "first argument to --save must be a number"
 
     def parseArguments (self, args = None, name = "ldapy"):
         parser = argparse.ArgumentParser (prog=name)
@@ -158,6 +159,8 @@ class Ldapy:
                 help="Use a previous connection. Lists recent connections if no number is given.")
         store.add_argument ("--saved", "-S", type=str, nargs="*", metavar="NAME",
                 help="Use a saved connection. Lists saved connections if no arguments are given.")
+        store.add_argument ("--save", nargs=2, metavar=("N", "NAME"),
+                help="Saves a previous connection as the name specified.")
 
         self.args = parser.parse_args (args)
 
@@ -175,6 +178,20 @@ class Ldapy:
         returned with the values given by the parser."""
 
         logger.debug ("Arguments before validation: %s" % vars(self.args))
+
+        if self.args.save:
+            try:
+                N = int(self.args.save[0])
+                connection = self.connectionDataManager.getRecentConnection (N)
+
+                name = self.args.save[1]
+                self.connectionDataManager.saveConnection (name, connection)
+                sys.exit (0)
+            except ValueError:
+                parser.error (self._first_argument_must_be_a_number)
+            except ConnectionDataManagerError as e:
+                print >> sys.stderr, e
+                sys.exit(3)
 
         if isinstance(self.args.previous, list):
             if len(self.args.previous) == 0:
