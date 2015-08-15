@@ -158,9 +158,9 @@ class BasicFunctionality (unittest2.TestCase):
 
         inputs = [no_such_command, "quit"]
 
-        with mock.patch('__builtin__.raw_input', side_effect=inputs),\
-                mock.patch('sys.stdout.write') as print_mock:
-                    cli.loop ()
+        with mock.patch('__builtin__.raw_input', side_effect=inputs):
+            with mock.patch('sys.stdout.write') as print_mock:
+                cli.loop ()
 
         expect_calls = \
                 [mock.call(Commandline._no_such_command % no_such_command),\
@@ -177,9 +177,9 @@ class BasicFunctionality (unittest2.TestCase):
         cli = Commandline ([cmd])
 
         inputs = [name, "quit"]
-        with mock.patch('__builtin__.raw_input', side_effect=inputs),\
-                mock.patch('sys.stdout.write') as print_mock:
-                    cli.loop ()
+        with mock.patch('__builtin__.raw_input', side_effect=inputs):
+            with mock.patch('sys.stdout.write') as print_mock:
+                cli.loop ()
 
         expect_calls = [mock.call(error), mock.call("\n")]
         assert print_mock.call_args_list == expect_calls

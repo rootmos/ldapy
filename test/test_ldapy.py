@@ -70,30 +70,30 @@ class BasicLdapyTests (unittest2.TestCase):
 
     def test_setAttribute_calls_setAttribute_on_node (self):
         ldapy = self.getLdapyAtRoot()
-        with configuration.provision() as p, \
-                mock.patch('ldapy.node.Node.setAttribute', autospec=True) as setterMock:
-            l = p.leaf()
+        with configuration.provision() as p:
+            with mock.patch('ldapy.node.Node.setAttribute', autospec=True) as setterMock:
+                l = p.leaf()
 
-            attribute = "description"
-            oldValue = "test_setAttribute_calls_setAttribute_on_node_old"
-            newValue = "test_setAttribute_calls_setAttribute_on_node_new"
+                attribute = "description"
+                oldValue = "test_setAttribute_calls_setAttribute_on_node_old"
+                newValue = "test_setAttribute_calls_setAttribute_on_node_new"
 
-            child = ldapy._resolveRelativeDN (l.rdn)
-            ldapy.setAttribute (l.rdn, attribute,
-                    newValue = newValue, oldValue = oldValue)
-            setterMock.assert_called_once_with (child, attribute,
-                    newValue = newValue, oldValue = oldValue)
+                child = ldapy._resolveRelativeDN (l.rdn)
+                ldapy.setAttribute (l.rdn, attribute,
+                        newValue = newValue, oldValue = oldValue)
+                setterMock.assert_called_once_with (child, attribute,
+                        newValue = newValue, oldValue = oldValue)
 
     def test_delete_calls_delete_on_node (self):
         ldapy = self.getLdapyAtRoot()
-        with configuration.provision() as p,\
-                mock.patch('ldapy.node.Node.delete', autospec=True) as deleteMock:
-            l = p.leaf()
+        with configuration.provision() as p:
+            with mock.patch('ldapy.node.Node.delete', autospec=True) as deleteMock:
+                l = p.leaf()
 
-            child = ldapy._resolveRelativeDN (l.rdn)
-            ldapy.delete (l.rdn)
+                child = ldapy._resolveRelativeDN (l.rdn)
+                ldapy.delete (l.rdn)
 
-            deleteMock.assert_called_once_with (child)
+                deleteMock.assert_called_once_with (child)
 
     def test_add_calls_add_on_node (self):
         ldapy = self.getLdapyAtRoot()
@@ -109,11 +109,11 @@ class BasicLdapyTests (unittest2.TestCase):
         connectionData = ConnectionData (configuration.uri,
                 configuration.admin,
                 configuration.admin_password)
-        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock,\
-                mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
-            parseArgumentsMock.return_value = (connectionData, True)
+        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock:
+            with mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
+                parseArgumentsMock.return_value = (connectionData, True)
 
-            ldapy = Ldapy()
+                ldapy = Ldapy()
 
         addRecentConnectionMock.assert_called_once_with (ldapy._lazyConnectionDataManager, connectionData)
 
@@ -276,17 +276,17 @@ class ErrorLdapyTests (unittest2.TestCase):
 
     def test_failed_connection_does_not_call_addRecentConnection (self):
         connectionData = ConnectionData ("ldap://foo", configuration.admin, configuration.admin_password)
-        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock,\
-                mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
-            parseArgumentsMock.return_value = (connectionData, True)
+        with mock.patch("ldapy.ldapy.Ldapy.parseArguments", autospec=True) as parseArgumentsMock:
+            with mock.patch("ldapy.connection_data.ConnectionDataManager.addRecentConnection", autospec=True) as addRecentConnectionMock:
+                parseArgumentsMock.return_value = (connectionData, True)
 
-            try:
-                ldapy = Ldapy()
+                try:
+                    ldapy = Ldapy()
 
-                # Expect that Ldapy's constructor calls sys.exit
-                self.assertTrue(False)
-            except SystemExit:
-                self.assertFalse (addRecentConnectionMock.called)
+                    # Expect that Ldapy's constructor calls sys.exit
+                    self.assertTrue(False)
+                except SystemExit:
+                    self.assertFalse (addRecentConnectionMock.called)
 
 
 class ArgumentParserTests (unittest2.TestCase):
@@ -330,9 +330,9 @@ class ArgumentParserTests (unittest2.TestCase):
     def test_neither_host_nor_uri_is_specified_and_no_recent_connection (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments ([])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments ([])
 
         self.assertIn(ldapy._neither_host_nor_uri_given, output.getvalue())
         self.assertEqual(e.exception.code, 2)
@@ -340,9 +340,9 @@ class ArgumentParserTests (unittest2.TestCase):
     def test_both_host_and_uri_is_specified (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["-H", "foo", "ldap://bar"])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["-H", "foo", "ldap://bar"])
 
         self.assertIn(ldapy._both_host_and_uri_given, output.getvalue())
         self.assertEqual(e.exception.code, 2)
@@ -350,9 +350,9 @@ class ArgumentParserTests (unittest2.TestCase):
     def test_malformed_uri (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["foobar://lars"])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["foobar://lars"])
 
         self.assertIn(ldapy._uri_malformed, output.getvalue())
         self.assertEqual(e.exception.code, 2)
@@ -360,16 +360,16 @@ class ArgumentParserTests (unittest2.TestCase):
     def test_port_invalid_number (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["-H", "foo", "-p", "-1"])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["-H", "foo", "-p", "-1"])
 
         self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
         self.assertEqual(e.exception.code, 2)
 
-        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["-H", "foo", "-p", str(0xffff + 1)])
+        with mock.patch('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["-H", "foo", "-p", str(0xffff + 1)])
 
         self.assertIn(ldapy._port_is_not_a_valid_number, output.getvalue())
         self.assertEqual(e.exception.code, 2)
@@ -392,9 +392,9 @@ class ArgumentParserTests (unittest2.TestCase):
         ldapy = Ldapy (self.con)
 
         N = 7
-        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["--previous", str(N)])
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["--previous", str(N)])
 
         msg = str(NoSuchRecentConnection(N))
         self.assertIn (msg, output.getvalue())
@@ -409,9 +409,9 @@ class ArgumentParserTests (unittest2.TestCase):
         b = ConnectionData("ldap://b.com", "cn=b")
         getter.return_value = [a, b]
 
-        with mock.patch ('sys.stdout', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["-P"])
+        with mock.patch ('sys.stdout', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["-P"])
 
         self.assertEqual (e.exception.code, 0)
 
@@ -424,9 +424,9 @@ class ArgumentParserTests (unittest2.TestCase):
 
     def test_previous_connection_with_too_many_arguments (self):
         ldapy = Ldapy (self.con)
-        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["--previous", "6", "7"])
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["--previous", "6", "7"])
 
         self.assertEqual (e.exception.code, 2)
         self.assertIn (ldapy._too_many_arguments, output.getvalue())
@@ -449,9 +449,9 @@ class ArgumentParserTests (unittest2.TestCase):
         ldapy = Ldapy (self.con)
 
         name = "foo"
-        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["-S", name])
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["-S", name])
 
         msg = str(NoSuchSavedConnection(name))
         self.assertIn (msg, output.getvalue())
@@ -470,9 +470,9 @@ class ArgumentParserTests (unittest2.TestCase):
 
         getter.return_value = {nameA:a, nameB:b}
 
-        with mock.patch ('sys.stdout', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["--saved"])
+        with mock.patch ('sys.stdout', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["--saved"])
 
         self.assertEqual (e.exception.code, 0)
 
@@ -487,9 +487,9 @@ class ArgumentParserTests (unittest2.TestCase):
 
     def test_saved_connection_with_too_many_arguments (self):
         ldapy = Ldapy (self.con)
-        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["--saved", "foo", "bar"])
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["--saved", "foo", "bar"])
 
         self.assertEqual (e.exception.code, 2)
         self.assertIn (ldapy._too_many_arguments, output.getvalue())
@@ -520,9 +520,9 @@ class ArgumentParserTests (unittest2.TestCase):
 
         N = 7
         name = "foo"
-        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["--save", str(N), name])
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["--save", str(N), name])
 
         msg = str(NoSuchRecentConnection(N))
         self.assertIn (msg, output.getvalue())
@@ -531,9 +531,9 @@ class ArgumentParserTests (unittest2.TestCase):
     def test_save_with_not_a_number (self):
         ldapy = Ldapy (self.con)
 
-        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["--save", "foo", "bar"])
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["--save", "foo", "bar"])
 
         self.assertIn (Ldapy._first_argument_must_be_a_number, output.getvalue())
         self.assertEqual (e.exception.code, 2)
@@ -557,9 +557,9 @@ class ArgumentParserTests (unittest2.TestCase):
         ldapy = Ldapy (self.con)
 
         name = "foo"
-        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output,\
-                self.assertRaises(SystemExit) as e:
-                    ldapy.parseArguments (["--remove", name])
+        with mock.patch ('sys.stderr', new_callable=io.BytesIO) as output:
+            with self.assertRaises(SystemExit) as e:
+                ldapy.parseArguments (["--remove", name])
 
         msg = str(NoSuchSavedConnection(name))
         self.assertIn (msg, output.getvalue())
