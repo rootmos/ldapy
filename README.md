@@ -11,16 +11,21 @@ Heavily inspired by [shelldap](http://projects.martini.nu/shelldap).
 Installation
 ------------
 Installation should be as easy as:
-
 ```
 make install
 ```
+This will try to execute `python setup install --user` to install it for the
+current user.
 
-This will try to:
+If there's missing dependencies (see the `requirements.txt` file), these can
+easily be resolved by using `pip`, conveniently wrapped as a make-target:
+```
+make requirements
+```
 
-1. Install all requirements (see the `requirements.txt` file) using `pip install --user`
-2. Gather a distribution file with `python setup.py`
-3. Install `ldapy` using `pip install --user`
+The primary requirements are
+[python-ldap](http://www.python-ldap.org/doc/html/ldap.html) and
+[readline](https://docs.python.org/2/library/readline.html).
 
 Usage
 -----
