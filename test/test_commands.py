@@ -1,6 +1,6 @@
 import configuration
 from ldapy.ldapy import Ldapy, AlreadyAtRoot
-import unittest
+import unittest2
 import mock
 from ldapy.commands import ChangeDN, List, PrintWorkingDN, Cat, Modify, Delete, Add
 from ldapy.exceptions import NoSuchObject, NoSuchObjectInRoot
@@ -60,7 +60,7 @@ def verifyStopsCompletingAfter (test, commandType, n, m = 10):
             test.assertListEqual(matches, [])
 
 
-class ChangeDNTests (unittest.TestCase):
+class ChangeDNTests (unittest2.TestCase):
 
     def test_successful_cd (self):
         with configuration.provision() as p:
@@ -156,7 +156,7 @@ class ChangeDNTests (unittest.TestCase):
         cmd (["a", "b"])
         self.assertTrue(cmd.usage.called)
 
-class ListTests (unittest.TestCase):
+class ListTests (unittest2.TestCase):
 
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
@@ -203,7 +203,7 @@ class ListTests (unittest.TestCase):
         cmd (["a"])
         self.assertTrue(cmd.usage.called)
 
-class PrintWorkingDNTests (unittest.TestCase):
+class PrintWorkingDNTests (unittest2.TestCase):
 
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
@@ -246,7 +246,7 @@ class PrintWorkingDNTests (unittest.TestCase):
         cmd (["a"])
         self.assertTrue(cmd.usage.called)
 
-class CatTests (unittest.TestCase):
+class CatTests (unittest2.TestCase):
 
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
@@ -349,7 +349,7 @@ class CatTests (unittest.TestCase):
         cmd (["a", "b"])
         self.assertTrue(cmd.usage.called)
 
-class ModifyTests (unittest.TestCase):
+class ModifyTests (unittest2.TestCase):
     def setUp (self):
         self.subcommands = [("add", "ldapy.commands.Modify.add"),
                 ("delete", "ldapy.commands.Modify.delete"),
@@ -543,7 +543,7 @@ class ModifyTests (unittest.TestCase):
         verifyStopsCompletingAfter (self, Modify, 1)
 
 
-class DeleteTests (unittest.TestCase):
+class DeleteTests (unittest2.TestCase):
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
             ldapy = getLdapy ()
@@ -617,7 +617,7 @@ class DeleteTests (unittest.TestCase):
         expect_calls = [mock.call(msg), mock.call("\n")]
         self.assertListEqual (print_mock.call_args_list, expect_calls)
 
-class AddTests (unittest.TestCase):
+class AddTests (unittest2.TestCase):
     def getLdapyAtRoot (self):
         with configuration.provision() as p:
             ldapy = getLdapy ()

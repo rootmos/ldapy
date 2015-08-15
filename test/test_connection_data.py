@@ -1,4 +1,4 @@
-import unittest
+import unittest2
 import mock
 import json
 import string
@@ -43,7 +43,7 @@ class ConnectionDataFormater:
         return json.loads(self.json)
 
 
-class ConnectionDataTests (unittest.TestCase):
+class ConnectionDataTests (unittest2.TestCase):
     def test_successful_ConnectionData_load (self):
         data = ConnectionDataFormater(
                 uri = "ldap://foobar.com",
@@ -87,7 +87,7 @@ class ConnectionDataTests (unittest.TestCase):
         self.assertDictEqual (expected, data.data.save())
 
 
-class ParserTests (unittest.TestCase):
+class ParserTests (unittest2.TestCase):
 
     def test_successful_trivial_parsing (self):
         trivialData = '{"recent":[],"saved":{}}'
@@ -155,7 +155,7 @@ class ParserTests (unittest.TestCase):
 
 
 
-class UnparserTests (unittest.TestCase):
+class UnparserTests (unittest2.TestCase):
     fmt = '{"recent":[%s],"saved":{%s}}'
 
     def createConnectionDataFormaters (self, numOfRecent = 0, numOfSaved = 0):
@@ -180,16 +180,18 @@ class UnparserTests (unittest.TestCase):
         recentStr = ",".join([str(r) for r in recent])
         savedStr = ",".join(sorted([str(s) for s in saved.itervalues()]))
 
-        data = ConnectionDataManager._unparse (
-                [x.data for x in recent],
-                {k: v.data for k,v in saved.iteritems()})
+        recentList = [r.data for r in recent]
+        savedDict = {}
+        for k, s in saved.iteritems():
+            savedDict[k] = s.data
+        data = ConnectionDataManager._unparse (recentList, savedDict)
         expected = UnparserTests.fmt % (recentStr, savedStr)
         print data
         print expected
         self.assertEqual (expected, data)
 
 
-class ConnectionDataManagerTests (unittest.TestCase):
+class ConnectionDataManagerTests (unittest2.TestCase):
 
     def createConnectionData (self, token):
         return ConnectionData("ldap://%s.com" % str(token), "cn=%s" % str(token))
@@ -236,38 +238,34 @@ class ConnectionDataManagerTests (unittest.TestCase):
             self.assertDictEqual({}, manager.saved)
 
     def test_readAndParseFile_reads_file (self):
-        with mock.patch("__builtin__.open", create=True, auto_spec=True) as mock_open,\
-                mock.patch("ldapy.connection_data.ConnectionDataManager._parse",
-                        spec=ConnectionDataManager._parse) as parserMock:
+        with mock.patch("__builtin__.open", create=True, auto_spec=True) as mock_open:
+            with mock.patch("ldapy.connection_data.ConnectionDataManager._parse", spec=ConnectionDataManager._parse) as parserMock:
+                mock_open.return_value = mock.MagicMock(spec=file)
+                raw = "testing data!"
+                f = mock_open.return_value.__enter__.return_value
+                f.read.return_value = raw
 
-            mock_open.return_value = mock.MagicMock(spec=file)
-            raw = "testing data!"
-            f = mock_open.return_value.__enter__.return_value
-            f.read.return_value = raw
+                ConnectionDataManager._readAndParseFile()
 
-            ConnectionDataManager._readAndParseFile()
-
-            mock_open.assert_called_once_with (ConnectionDataManager.filename, "r")
-            parserMock.assert_called_once_with (raw)
+                mock_open.assert_called_once_with (ConnectionDataManager.filename, "r")
+                parserMock.assert_called_once_with (raw)
 
     def test_unparseAndSaveFile_writes_file (self):
         manager, recent, saved = self.createConnectionManager (numOfRecent = 3, numOfSaved = 4)
 
-        with mock.patch("__builtin__.open", create=True, auto_spec=True) as mock_open,\
-                mock.patch("ldapy.connection_data.ConnectionDataManager._unparse",
-                        spec=ConnectionDataManager._unparse) as unparserMock:
+        with mock.patch("__builtin__.open", create=True, auto_spec=True) as mock_open:
+            with mock.patch("ldapy.connection_data.ConnectionDataManager._unparse", spec=ConnectionDataManager._unparse) as unparserMock:
+                mock_open.return_value = mock.MagicMock(spec=file)
+                f = mock_open.return_value.__enter__.return_value
 
-            mock_open.return_value = mock.MagicMock(spec=file)
-            f = mock_open.return_value.__enter__.return_value
+                raw = "testing data!"
+                unparserMock.return_value = raw
 
-            raw = "testing data!"
-            unparserMock.return_value = raw
+                manager._unparseAndSaveFile ()
 
-            manager._unparseAndSaveFile ()
-
-            mock_open.assert_called_once_with (ConnectionDataManager.filename, "w")
-            unparserMock.assert_called_once_with (recent, saved)
-            f.write.assert_called_once_with (raw)
+                mock_open.assert_called_once_with (ConnectionDataManager.filename, "w")
+                unparserMock.assert_called_once_with (recent, saved)
+                f.write.assert_called_once_with (raw)
 
     def test_addRecentConnection (self):
         manager, recent, saved = self.createConnectionManager (numOfRecent = 1)
@@ -375,7 +373,7 @@ class ConnectionDataManagerTests (unittest.TestCase):
         self.assertDictEqual (newSaved, saved)
 
 
-class OrdinalsTest (unittest.TestCase):
+class OrdinalsTest (unittest2.TestCase):
     def test_ordinals (self):
         tests = [(1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th"),
                  (12, "12th"), (13, "13th"),

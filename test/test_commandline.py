@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import unittest
+import unittest2
 import mock
 import pexpect
 import os
@@ -8,7 +8,7 @@ import sys
 import syslog
 from ldapy.commandline import Commandline, Command, NoSuchCommand, ExitCommand
 
-class Parser (unittest.TestCase):
+class Parser (unittest2.TestCase):
 
     def test_empty_line (self):
         cli = Commandline ([])
@@ -104,7 +104,7 @@ class Parser (unittest.TestCase):
         cmd.usage.reset_mock ()
 
 
-class BasicFunctionality (unittest.TestCase):
+class BasicFunctionality (unittest2.TestCase):
 
     def test_exit (self):
         cli = Commandline ([])
@@ -158,9 +158,9 @@ class BasicFunctionality (unittest.TestCase):
 
         inputs = [no_such_command, "quit"]
 
-        with mock.patch('__builtin__.raw_input', side_effect=inputs),\
-                mock.patch('sys.stdout.write') as print_mock:
-                    cli.loop ()
+        with mock.patch('__builtin__.raw_input', side_effect=inputs):
+            with mock.patch('sys.stdout.write') as print_mock:
+                cli.loop ()
 
         expect_calls = \
                 [mock.call(Commandline._no_such_command % no_such_command),\
@@ -177,9 +177,9 @@ class BasicFunctionality (unittest.TestCase):
         cli = Commandline ([cmd])
 
         inputs = [name, "quit"]
-        with mock.patch('__builtin__.raw_input', side_effect=inputs),\
-                mock.patch('sys.stdout.write') as print_mock:
-                    cli.loop ()
+        with mock.patch('__builtin__.raw_input', side_effect=inputs):
+            with mock.patch('sys.stdout.write') as print_mock:
+                cli.loop ()
 
         expect_calls = [mock.call(error), mock.call("\n")]
         assert print_mock.call_args_list == expect_calls
@@ -198,7 +198,7 @@ class TrivialCommandline:
         cli = Commandline ([])
         cli.loop ()
 
-class Completer (unittest.TestCase):
+class Completer (unittest2.TestCase):
 
     def test_completer_called (self):
         child = create_sut_process (Completer, Completer.sut_completer_called)

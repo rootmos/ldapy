@@ -163,9 +163,14 @@ class ConnectionDataManager:
         if saved is None:
             saved = {}
 
+        recentList = [r.save() for r in recent]
+        savedDict = {}
+        for k, s in saved.iteritems():
+            savedDict[k] = s.save()
+
         return json.dumps (
-                {"recent": [r.save() for r in recent],
-                 "saved": {k: s.save() for k, s in saved.iteritems()}},
+                {"recent": recentList,
+                 "saved": savedDict},
                 sort_keys=True,
                 separators=(',', ':'))
 
