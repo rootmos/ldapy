@@ -36,9 +36,7 @@ ldapy --host=localhost --bind-dn cn=Admin,dc=nodomain --password=foobar
 
 Wishlist
 --------
-* Save recent connections, let user override settings in them (eg reuse all
-  settings but change the bind DN.) This feature is ongoing in the
-  connection-data branch.
+* Allow combinations of stored connections and specified connection data
 * Rename and move DNs
 * Wildcards
 * Release 0.1 :)
