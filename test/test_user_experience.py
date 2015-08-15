@@ -21,15 +21,18 @@ def random_value (N=20):
 
 
 class spawn_ldapy (pexpect.spawn):
-    def __init__ (self, args = None, root = None, wait_for_prompt=True):
-        # Prepare by setting the historyFile to a temporary file
-        self.historyFile = tempfile.NamedTemporaryFile()
+    def __init__ (self, args = None, root = None, wait_for_prompt=True, historyFile = None):
+        if historyFile is None:
+            # Prepare by setting the historyFile to a temporary file
+            self.historyFile = tempfile.NamedTemporaryFile()
+        else:
+            self.historyFile = historyFile
 
         pwd = os.path.dirname (__file__)
         script = os.path.join (pwd, "../scripts/ldapy")
         coverage = ["coverage", "run", "-p", "--source", os.environ["NOSE_COVER_PACKAGE"], script]
 
-        if not args:
+        if args is None:
             args = ["-D", bind_dn, "-w", password, uri ]
 
         pexpect.spawn.__init__ (self, " ".join (coverage + args),
@@ -70,22 +73,24 @@ class spawn_ldapy (pexpect.spawn):
             self.assert_exitstatus (0)
         return False
 
+def execute_with_args_ls_and_expect_root (args, historyFile = None):
+    with configuration.provision() as p,\
+            spawn_ldapy (args=args, historyFile=historyFile) as ldapy:
+                ldapy.sendline ("ls")
+                ldapy.expect (p.root)
+                ldapy.expect_prompt ()
+
 class BasicConnectivity (unittest.TestCase):
 
     def test_successful_anonymous_connection (self):
-        self.execute_with_args_ls_and_expect_root ([uri]) 
+        execute_with_args_ls_and_expect_root ([uri])
 
     def test_successful_bind_with_uri (self):
-        self.execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, uri ])
+        execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, uri ])
 
     def test_successful_bind_with_host_port (self):
-        self.execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, "-H", host])
+        execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, "-H", host])
 
-    def execute_with_args_ls_and_expect_root (self, args):
-        with configuration.provision() as p, spawn_ldapy (args=args) as ldapy:
-            ldapy.sendline ("ls")
-            ldapy.expect (p.root)
-            ldapy.expect_prompt ()
 
 class FailedConnectionErrors (unittest.TestCase):
     def test_unknow_host (self):
@@ -291,3 +296,29 @@ class AddUseCases (unittest.TestCase):
             finally:
                 p.delete (dn)
 
+class StoredConnectionUseCases (unittest.TestCase):
+    def test_store_connection (self):
+        historyFile = tempfile.NamedTemporaryFile()
+
+        # Make a successful connection
+        execute_with_args_ls_and_expect_root (["-D", bind_dn, "-w", password, uri], historyFile = historyFile)
+
+        # Make a successful connection without any arguments, since we should
+        # have stored the previous connection
+        execute_with_args_ls_and_expect_root ([], historyFile = historyFile)
+
+        # Store the previous connection
+        name = "foo"
+        with spawn_ldapy (["--save", "0", name], wait_for_prompt=False, historyFile = historyFile) as ldapy:
+            ldapy.assert_exitstatus (0)
+
+        # Connect with the stored connection
+        execute_with_args_ls_and_expect_root (["-S", name], historyFile = historyFile)
+
+        # Remove the stored connection
+        with spawn_ldapy (["--remove", name], wait_for_prompt=False, historyFile = historyFile) as ldapy:
+            ldapy.assert_exitstatus (0)
+        
+        # Try using the name again, but fail
+        with spawn_ldapy (["--saved", name], wait_for_prompt=False, historyFile = historyFile) as ldapy:
+            ldapy.assert_exitstatus (3)
