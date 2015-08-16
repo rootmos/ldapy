@@ -14,7 +14,7 @@ Installation should be as easy as:
 ```
 make install
 ```
-This will try to execute `python setup install --user` to install it for the
+This will try to execute `python setup.py install --user` to install it for the
 current user.
 
 If there's missing dependencies (see the `requirements.txt` file), these can
