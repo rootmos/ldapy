@@ -2,7 +2,7 @@ ldapy
 =====
 
 [![Build Status](https://travis-ci.org/rootmos/ldapy.svg)](https://travis-ci.org/rootmos/ldapy)
-[![Coverage Status](https://coveralls.io/repos/rootmos/ldapy/badge.png)](https://coveralls.io/r/rootmos/ldapy)
+[![Coverage Status](https://coveralls.io/repos/rootmos/ldapy/badge.svg?branch=master&service=github)](https://coveralls.io/github/rootmos/ldapy?branch=master)
 
 `ldapy` is aimed to be command line LDAP explorer implemented in Python, with
 all the joys of GNU readline: history, completion and editing.
