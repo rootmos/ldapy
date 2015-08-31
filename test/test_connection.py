@@ -168,6 +168,20 @@ class AddTests (unittest2.TestCase):
             self.assertIn (value, str(received.exception))
             self.assertIn (attribute, str(received.exception))
 
+    def test_add_without_must_attribute (self):
+        with configuration.provision() as p:
+            c = p.container()
+
+            name = "test_add_without_must_attribute"
+            objectClass = "person"
+            dnComponent = "cn"
+
+            dn = "%s=%s,%s" % (dnComponent, name, c.dn)
+
+            attrs = {"objectClass": objectClass, dnComponent: name}
+            with self.assertRaises (LdapError) as received:
+                self.con.add (dn, attrs)
+
 class ConnectionErrors (unittest2.TestCase):
 
     def test_bind_connect_error (self):

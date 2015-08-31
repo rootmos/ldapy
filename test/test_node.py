@@ -1,5 +1,5 @@
 from ldapy.node import Node, NodeError
-from ldapy.exceptions import DNDecodingError, NoSuchObject, UndefinedType, TypeOrValueExists
+from ldapy.exceptions import LdapError, DNDecodingError, NoSuchObject, UndefinedType, TypeOrValueExists
 import unittest2
 import mock
 import configuration
@@ -95,6 +95,21 @@ class ModifyAttributesTests (unittest2.TestCase):
 
             self.assertListEqual([newValue], p.attribute(l, attribute))
             self.assertListEqual([newValue], node.attributes[attribute])
+
+    def test_must_attribute_replace (self):
+        with configuration.provision() as p:
+            objectClass = "person"
+            mustAttribute = "sn"
+            newValue = "test_must_attribute_replace_new"
+            oldValue = "test_must_attribute_replace_old"
+
+            l = p.leaf(attr={mustAttribute: oldValue}, objectClass=objectClass)
+
+            node = Node (self.con, l.dn)
+            node.setAttribute (mustAttribute, newValue, oldValue = oldValue)
+
+            self.assertListEqual([newValue], p.attribute(l, mustAttribute))
+            self.assertListEqual([newValue], node.attributes[mustAttribute])
 
     def test_replace_one_value_of_two (self):
         with configuration.provision() as p:
@@ -236,6 +251,18 @@ class ModifyAttributesTests (unittest2.TestCase):
 
             self.assertListEqual([valueStays], p.attribute(l, attribute))
             self.assertListEqual([valueStays], node.attributes[attribute])
+
+    def test_remove_must_attribute (self):
+        with configuration.provision() as p:
+            objectClass = "person"
+            mustAttribute = "sn"
+            valueGoes = "test_must_attribute_replace_old"
+
+            l = p.leaf(attr={mustAttribute: valueGoes}, objectClass=objectClass)
+            node = Node (self.con, l.dn)
+
+            with self.assertRaises (LdapError) as received:
+                node.setAttribute(mustAttribute, oldValue = valueGoes, newValue = None)
 
 
 class DeleteTests (unittest2.TestCase):
